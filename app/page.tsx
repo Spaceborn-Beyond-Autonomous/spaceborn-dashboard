@@ -1,29 +1,16 @@
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
+// app/page.tsx (server component)
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth'; // server-side auth checker
 
-export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+export default async function Home() {
+  const user = await getCurrentUser(); // runs on server
 
-  useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+  if (user) {
+    redirect('/dashboard');
+  } else {
+    redirect('/login');
   }
 
+  // this component never renders
   return null;
 }
