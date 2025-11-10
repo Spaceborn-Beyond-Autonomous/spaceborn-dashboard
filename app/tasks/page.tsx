@@ -19,7 +19,7 @@ const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
 type TaskStatus = typeof STATUS_OPTIONS[number];
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  'Pending': 'bg-yellow-500/80 text-yellow-400 border-yellow-500/50',
+  'Pending': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
   'In Progress': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
   'Completed': 'bg-green-500/20 text-green-400 border-green-500/50',
 };
@@ -44,7 +44,7 @@ interface StatusBadgeProps {
 const StatusBadge = ({ status, canEdit, onStatusChange }: StatusBadgeProps) => {
   if (!canEdit) {
     return (
-      <span className={`inline-block px-2 py-1 rounded text-xs border ${getStatusColor(status)}`}>
+      <span className={`inline-block px-3 py-1.5 rounded-md text-xs font-medium border ${getStatusColor(status)}`}>
         {status}
       </span>
     );
@@ -52,14 +52,14 @@ const StatusBadge = ({ status, canEdit, onStatusChange }: StatusBadgeProps) => {
 
   return (
     <Select value={status} onValueChange={onStatusChange}>
-      <SelectTrigger className={`text-xs px-2 py-1 rounded border outline-none cursor-pointer ${getStatusColor(status)}`}>
+      <SelectTrigger className={`w-[140px] h-8 text-xs font-medium px-3 rounded-md border outline-none cursor-pointer transition-all hover:brightness-110 ${getStatusColor(status)}`}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-[#1a1a1a] border border-[#333] rounded-md shadow-xl min-w-[140px]">
         {STATUS_OPTIONS.map(option => (
           <SelectItem
             key={option}
-            className={getStatusColor(option)}
+            className={`cursor-pointer transition-all hover:brightness-125 focus:brightness-125 text-xs font-medium mb-1 mt-1 px-3 py-2 ${getStatusColor(option)}`}
             value={option}
           >
             {option}
