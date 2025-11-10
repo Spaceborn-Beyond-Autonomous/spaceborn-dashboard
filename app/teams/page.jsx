@@ -4,8 +4,7 @@ import { useData } from '../../context/DataContext';
 import { users } from '../../mock/mockData';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
-import Card from '../../components/Card';
-import Table from '../../components/Table';
+import { Users as UsersIcon } from 'lucide-react';
 
 export default function Teams() {
   const { user } = useAuth();
@@ -24,39 +23,37 @@ export default function Teams() {
       <div className="flex-1 md:ml-64">
         <Header title="Teams" />
         <main className="p-6">
-          <Card title="All Teams">
-            <Table
-              headers={['Team Name', 'Members', 'Size']}
-              data={teams}
-              renderRow={(team) => (
-                <>
-                  <td className="py-3 px-4 text-white font-semibold">{team.name}</td>
-                  <td className="py-3 px-4 text-gray-300">
-                    {team.members.map(userId => getUserName(userId)).join(', ')}
-                  </td>
-                  <td className="py-3 px-4 text-gray-300">{team.members.length} members</td>
-                </>
-              )}
-            />
-          </Card>
-
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map(team => (
-              <Card key={team.id} title={team.name}>
-                <div className="space-y-2">
+              <div key={team.id} className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                    <UsersIcon className="h-5 w-5 text-black" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">{team.name}</h3>
+                </div>
+                <div className="space-y-3">
                   {team.members.map(userId => {
                     const member = users.find(u => u.id === userId);
                     return (
-                      <div key={userId} className="flex justify-between items-center">
-                        <span className="text-gray-300">{member?.name}</span>
-                        <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">
+                      <div key={userId} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#222] flex items-center justify-center text-xs font-medium text-white">
+                            {member?.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <span className="text-sm text-white">{member?.name}</span>
+                        </div>
+                        <span className="text-xs bg-[#222] text-white px-2 py-1 rounded uppercase tracking-wide">
                           {member?.role}
                         </span>
                       </div>
                     );
                   })}
                 </div>
-              </Card>
+                <div className="mt-4 pt-4 border-t border-[#222]">
+                  <p className="text-xs text-[#aaa]">{team.members.length} members</p>
+                </div>
+              </div>
             ))}
           </div>
         </main>

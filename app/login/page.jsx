@@ -2,10 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 
 export default function Login() {
@@ -33,66 +29,61 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10" />
-      <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-      
-      <Card className="w-full max-w-md glass relative z-10">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl text-center font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Welcome Back</CardTitle>
-          <CardDescription className="text-center text-muted-foreground">
-            Enter your credentials to access your dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#000]">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold text-white mb-2">Welcome Back</h1>
+          <p className="text-sm text-[#aaa]">Enter your credentials to access your dashboard</p>
+        </div>
+        
+        <div className="bg-[#111] border border-[#222] rounded p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground/90">Email</Label>
-              <Input
+              <label htmlFor="email" className="text-sm text-white">Email</label>
+              <input
                 id="email"
                 type="email"
                 placeholder="admin@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="glass-card border-white/10"
+                className="w-full px-3 py-2 bg-[#000] text-white border border-[#222] rounded focus:border-white outline-none transition-all"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground/90">Password</Label>
-              <Input
+              <label htmlFor="password" className="text-sm text-white">Password</label>
+              <input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="glass-card border-white/10"
+                className="w-full px-3 py-2 bg-[#000] text-white border border-[#222] rounded focus:border-white outline-none transition-all"
                 required
               />
             </div>
             
             {error && (
-              <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</div>
+              <div className="text-sm text-white bg-[#222] p-3 rounded border border-[#333]">{error}</div>
             )}
             
-            <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium">
-              <LogIn className="mr-2 h-4 w-4" />
+            <button type="submit" className="w-full bg-white text-black px-4 py-2 rounded hover:bg-[#aaa] transition-all duration-200 flex items-center justify-center gap-2 font-medium">
+              <LogIn className="h-4 w-4" />
               Login
-            </Button>
+            </button>
           </form>
           
-          <div className="mt-6 p-4 glass-card rounded-lg">
-            <p className="text-sm font-medium mb-2 text-foreground/90">Demo Accounts:</p>
-            <div className="text-xs space-y-1 text-muted-foreground">
+          <div className="mt-6 pt-6 border-t border-[#222]">
+            <p className="text-sm font-medium mb-2 text-white">Demo Accounts:</p>
+            <div className="text-xs space-y-1 text-[#aaa]">
               <p>admin@company.com / admin123</p>
               <p>core@company.com / core123</p>
               <p>employee@company.com / emp123</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

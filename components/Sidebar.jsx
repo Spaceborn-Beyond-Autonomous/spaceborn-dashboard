@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { LayoutDashboard, FolderKanban, DollarSign, Users, CheckSquare, LogOut, Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
@@ -43,25 +42,20 @@ const Sidebar = () => {
 
   return (
     <>
-      <Button 
-        variant="ghost"
-        size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
+      <button 
+        className="md:hidden fixed top-4 left-4 z-50 p-2 hover:bg-[#1a1a1a] rounded transition-all"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+      </button>
       
       <div className={cn(
-        "fixed left-0 top-0 h-full w-64 glass border-r border-white/10 transform transition-transform md:translate-x-0 z-40",
+        "fixed left-0 top-0 h-full w-64 bg-[#111] border-r border-[#222] transform transition-transform md:translate-x-0 z-40",
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-8 flex items-center gap-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            <LayoutDashboard className="h-5 w-5 text-blue-400" />
-            Spaceborn
-          </h2>
-          <nav className="space-y-2">
+        <div className="px-6 py-4">
+          <h2 className="text-xl font-semibold mb-8 text-white">Spaceborn</h2>
+          <nav className="space-y-1">
             {getNavItems().map(item => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -70,33 +64,32 @@ const Sidebar = () => {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                    "flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 relative",
                     isActive 
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-foreground border border-blue-500/30" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-white text-black before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-white" 
+                      : "text-[#aaa] hover:text-white hover:bg-[#1a1a1a]"
                   )}
                   onClick={() => setIsOpen(false)}
                 >
                   <Icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="text-sm font-medium">{item.label}</span>
                 </Link>
               );
             })}
-            <Button 
-              variant="ghost"
+            <button 
               onClick={logout}
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 mt-4"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded text-[#aaa] hover:text-white hover:bg-[#1a1a1a] transition-all duration-200 mt-4"
             >
               <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+              <span className="text-sm font-medium">Logout</span>
+            </button>
           </nav>
         </div>
       </div>
       
       {isOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-black/50 z-30"
+          className="md:hidden fixed inset-0 bg-black/80 z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
