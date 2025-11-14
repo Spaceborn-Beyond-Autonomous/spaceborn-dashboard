@@ -1,62 +1,46 @@
-'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+"use client";
 
-interface User {
-  id: string;
-  email: string;
-}
+import { createContext, useState, useEffect } from "react";
+import { getAccessToken, clearTokens } from "@/lib/auth";
+import { getDashboard } from "@/lib/api/dashboard";
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
+type User = { id: number; name: string; email: string };
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
+export const AuthContext = createContext({
+  user: null as User | null,
+  role: "",
   loading: true,
-  login: async () => { },
   logout: () => { },
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: any) {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Optional: check current user on mount
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setUser(data.user || null))
-      .finally(() => setLoading(false));
+    const token = getAccessToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    getDashboard().then((data) => {
+      setUser(data.user ?? null);
+      setRole(data.role ?? "");
+      setLoading(false);
+    });
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await fetch('http://localhost:8000/api/token/', { // Django JWT endpoint
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include', // for cookie storage
-    });
-
-    if (!res.ok) throw new Error('Invalid credentials');
-    const data = await res.json();
-
-    // If backend returns user info, store in state
-    setUser(data.user || null);
-  };
-
-  const logout = () => {
+  function logout() {
+    clearTokens();
     setUser(null);
-    fetch('http://localhost:8000/api/logout/', { method: 'POST', credentials: 'include' });
-  };
+    setRole("");
+  }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = () => useContext(AuthContext);

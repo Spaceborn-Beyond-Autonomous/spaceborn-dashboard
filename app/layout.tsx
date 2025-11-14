@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
-import { DataProvider } from '../context/DataContext';
 
 export const metadata: Metadata = {
   title: 'Spaceborn Dashboard',
@@ -17,9 +16,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body>
         <AuthProvider>
-          <DataProvider>
-            {children}
-          </DataProvider>
+          {children}
         </AuthProvider>
       </body>
     </html>

@@ -13,6 +13,8 @@ export type AdminDashboard = {
 
 export type CoreDashboard = {
     role: "core";
+    user: { id: number; name: string; email: string };
+
     teams: any[];
     statistics: any;
     team_projects: any[];
@@ -22,6 +24,7 @@ export type CoreDashboard = {
 
 export type EmployeeDashboard = {
     role: "employee";
+    user: { id: number; name: string; email: string };
     statistics: any;
     my_tasks: any[];
     overdue_tasks: any[];
