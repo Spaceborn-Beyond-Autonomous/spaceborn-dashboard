@@ -1,14 +1,14 @@
-import { redirect } from "next/navigation";
-import { getAccessToken } from "@/lib/auth";
+import { verifySession } from '@/lib/dal';
+import { redirect } from 'next/navigation';
 
 export default async function Page() {
-  const token = await getAccessToken();
-
-  // If user is authenticated, redirect to dashboard
-  if (token) {
-    redirect("/dashboard");
+  // Check if user is authenticated via DAL
+  try {
+    await verifySession();
+    // If authenticated, redirect to dashboard
+    redirect('/dashboard');
+  } catch {
+    // If not authenticated, redirect to login
+    redirect('/login');
   }
-
-  // If not authenticated, redirect to login
-  redirect("/login");
 }

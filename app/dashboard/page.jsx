@@ -1,9 +1,10 @@
-import { redirect } from "next/navigation";
-import { getAccessToken } from "@/lib/auth";
-import Dashboard from "@/components/Dashboard";
+import { verifySession } from '@/lib/dal';
+import { getDashboard } from '@/lib/api/dashboard';
+import Dashboard from '@/components/Dashboard';
 
-export default async function Page() {
-  const token = await getAccessToken();
-  if (!token) redirect("/login");
-  return <Dashboard />;
+export default async function DashboardPage() {
+  const { user } = await verifySession();
+  const dashboardData = await getDashboard();
+
+  return <Dashboard user={user} data={dashboardData} />;
 }
