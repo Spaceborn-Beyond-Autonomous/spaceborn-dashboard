@@ -2,18 +2,51 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+    Field,
+    FieldLabel,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+} from '@/components/ui/field';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+    const [generalError, setGeneralError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
+    const validateForm = () => {
+        const newErrors: { email?: string; password?: string } = {};
+
+        if (!email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!password) {
+            newErrors.password = 'Password is required';
+        } else if (password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setError('');
+        setGeneralError('');
+        setErrors({});
+
+        if (!validateForm()) return;
+
         setIsLoading(true);
 
         try {
@@ -31,69 +64,132 @@ export default function LoginForm() {
                 router.push('/dashboard');
                 router.refresh();
             } else {
-                setError(data.error || 'Invalid email or password');
+                setGeneralError(data.error || 'Invalid email or password');
             }
         } catch (err) {
-            setError('An error occurred. Please try again.');
+            setGeneralError('An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-black">
-            <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-semibold text-white mb-2">Welcome Back</h1>
-                    <p className="text-sm text-[#aaa]">Enter your credentials to access your dashboard</p>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] relative overflow-hidden">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+            </div>
+
+            <div className="w-full max-w-md relative z-10">
+                {/* Header */}
+                <div className="text-center mb-8 space-y-2">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 mb-4">
+                        <LogIn className="w-8 h-8 text-white" />
+                    </div>
+                    <h1 className="text-4xl font-bold text-white tracking-tight">Welcome Back</h1>
+                    <p className="text-sm text-white/60">Sign in to continue to your dashboard</p>
                 </div>
 
-                <div className="bg-[#111] border border-[#222] rounded p-6">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm text-white">Email</label>
-                            <input
-                                id="email"
-                                type="email"
-                                placeholder="admin@company.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 bg-black text-white border border-[#222] rounded focus:border-white outline-none transition-all"
-                                required
-                                disabled={isLoading}
-                            />
-                        </div>
+                {/* Glassmorphism Card */}
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <FieldGroup>
+                            {/* Email Field */}
+                            <Field data-invalid={!!errors.email}>
+                                <FieldLabel htmlFor="email" className="text-white/90">
+                                    Email Address
+                                </FieldLabel>
+                                <div className="relative group mt-2">
+                                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-white transition-colors z-10" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="you@example.com"
+                                        value={email}
+                                        onChange={(e) => {
+                                            setEmail(e.target.value);
+                                            if (errors.email) setErrors({ ...errors, email: undefined });
+                                        }}
+                                        aria-invalid={!!errors.email}
+                                        disabled={isLoading}
+                                        className="pl-12 bg-white/5 text-white placeholder-white/40 border-white/10 focus:ring-white/30 focus:border-transparent disabled:opacity-50"
+                                    />
+                                </div>
+                                {errors.email && <FieldError className="text-red-400 mt-1.5">{errors.email}</FieldError>}
+                            </Field>
 
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="text-sm text-white">Password</label>
-                            <input
-                                id="password"
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-3 py-2 bg-black text-white border border-[#222] rounded focus:border-white outline-none transition-all"
-                                required
-                                disabled={isLoading}
-                            />
-                        </div>
+                            {/* Password Field */}
+                            <Field data-invalid={!!errors.password}>
+                                <div className="flex items-center justify-between">
+                                    <FieldLabel htmlFor="password" className="text-white/90">
+                                        Password
+                                    </FieldLabel>
+                                    <button
+                                        type="button"
+                                        className="text-xs text-white/60 hover:text-white transition-colors"
+                                    >
+                                        Forgot password?
+                                    </button>
+                                </div>
+                                <div className="relative group mt-2">
+                                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-white transition-colors z-10" />
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => {
+                                            setPassword(e.target.value);
+                                            if (errors.password) setErrors({ ...errors, password: undefined });
+                                        }}
+                                        aria-invalid={!!errors.password}
+                                        disabled={isLoading}
+                                        className="pl-12 bg-white/5 text-white placeholder-white/40 border-white/10 focus:ring-white/30 focus:border-transparent disabled:opacity-50"
+                                    />
+                                </div>
+                                {errors.password && <FieldError className="text-red-400 mt-1.5">{errors.password}</FieldError>}
+                            </Field>
+                        </FieldGroup>
 
-                        {error && (
-                            <div className="text-sm text-red-400 bg-red-500/10 p-3 rounded border border-red-500/20">
-                                {error}
+                        {/* General Error Message */}
+                        {generalError && (
+                            <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl animate-in slide-in-from-top-2">
+                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                </div>
+                                <p className="text-sm text-red-400 flex-1">{generalError}</p>
                             </div>
                         )}
 
-                        <button
+                        {/* Submit Button */}
+                        <Button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-white text-black px-4 py-2 rounded hover:bg-[#aaa] transition-all duration-200 flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-white hover:bg-white/90 text-black font-semibold h-12 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                         >
-                            <LogIn className="h-4 w-4" />
-                            {isLoading ? 'Logging in...' : 'Login'}
-                        </button>
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                    Signing in...
+                                </>
+                            ) : (
+                                <>
+                                    <LogIn className="h-5 w-5 mr-2" />
+                                    Sign In
+                                </>
+                            )}
+                        </Button>
                     </form>
                 </div>
+            </div>
+
+            {/* Footer */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-center text-xs text-white/40">
+                <p>
+                    Secured by Spaceborn &copy; 2025
+                </p>
             </div>
         </div>
     );
