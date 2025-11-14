@@ -1,44 +1,41 @@
-import { api } from "../apiBase";
+import { api } from '../apiBase';
 
-export function listProjects() {
-    return api("projects/");
+export interface Project {
+    id: string;
+    name: string;
+    description: string;
+    status: 'planning' | 'in_progress' | 'completed' | 'on_hold';
+    startDate: string;
+    endDate?: string;
+    teamId: string;
+    budget?: number;
+    progress: number;
 }
 
-export function getProjectCount() {
-    return api("projects/count/");
+export async function getProjects(): Promise<Project[]> {
+    return api('projects/');
 }
 
-export function getProject(id: number) {
+export async function getProject(id: string): Promise<Project> {
     return api(`projects/${id}/`);
 }
 
-export function createProject(body: any) {
-    return api("projects/", {
-        method: "POST",
-        body: JSON.stringify(body),
+export async function createProject(data: Partial<Project>): Promise<Project> {
+    return api('projects/', {
+        method: 'POST',
+        body: JSON.stringify(data),
     });
 }
 
-export function updateProject(id: number, body: any) {
+export async function updateProject(id: string, data: Partial<Project>): Promise<Project> {
     return api(`projects/${id}/`, {
-        method: "PUT",
-        body: JSON.stringify(body),
+        method: 'PUT',
+        body: JSON.stringify(data),
     });
 }
 
-export function deleteProject(id: number) {
+export async function deleteProject(id: string): Promise<void> {
     return api(`projects/${id}/`, {
-        method: "DELETE",
-    });
-}
-
-export function filterProjectsByStatus(status: string) {
-    return api(`projects/by_status/?status=${status}`);
-}
-
-export function addProjectMember(projectId: number, userId: number) {
-    return api(`projects/${projectId}/add_member/`, {
-        method: "POST",
-        body: JSON.stringify({ user_id: userId }),
+        method: 'DELETE',
     });
 }
