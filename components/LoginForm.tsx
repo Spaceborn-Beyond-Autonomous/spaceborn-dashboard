@@ -74,7 +74,7 @@ export default function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-black via-[#0a0a0a] to-[#111] relative overflow-hidden">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
@@ -156,7 +156,7 @@ export default function LoginForm() {
                         {/* General Error Message */}
                         {generalError && (
                             <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl animate-in slide-in-from-top-2">
-                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                                <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
                                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
                                 </div>
                                 <p className="text-sm text-red-400 flex-1">{generalError}</p>
