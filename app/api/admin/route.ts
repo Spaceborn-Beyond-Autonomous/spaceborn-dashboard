@@ -19,7 +19,7 @@ export async function GET() {
         }
 
         // Fetch admin data from Django
-        const response = await fetch(`${process.env.BACKEND_URL}/api/v1/admin/users`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
 

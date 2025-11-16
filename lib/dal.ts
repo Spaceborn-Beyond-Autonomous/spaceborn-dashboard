@@ -2,7 +2,7 @@
 
 import { getAccessToken } from './auth';
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
 export type UserRole = 'admin' | 'core' | 'employee';
 
@@ -21,7 +21,7 @@ export async function verifySession() {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/auth/verify/`, {
+        const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/auth/verify/`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },

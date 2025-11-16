@@ -2,7 +2,7 @@
 
 const ACCESS = "accessToken";
 const REFRESH = "refreshToken";
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
 export function setTokens(access: string, refresh?: string) {
     if (typeof window !== 'undefined') {
@@ -54,7 +54,7 @@ export async function login(credentials: { email: string; password: string }) {
         body: JSON.stringify(payload),
     };
 
-    const res = await fetch(`${BACKEND_URL}/users/login/`, requestOptions);
+    const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/login/`, requestOptions);
 
     const data = await res.json();
     console.log('Response data:', data);
@@ -73,7 +73,7 @@ export async function refreshAccessToken() {
     const refresh = getRefreshToken();
     if (!refresh) return null;
 
-    const res = await fetch(`${BACKEND_URL}/auth/token/refresh/`, {
+    const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/auth/token/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh }),

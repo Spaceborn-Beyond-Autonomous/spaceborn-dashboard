@@ -8,7 +8,7 @@ import { FolderKanban, Plus, Edit, Trash2, X } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-const BACKEND_URL = process.env.BACKEND_URL;
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 interface User {
     id: string;

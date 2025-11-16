@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
 export async function GET() {
     const cookieStore = await cookies();
@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/users/`, {
+        const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const response = await fetch(`${BACKEND_URL}/users/`, {
+        const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

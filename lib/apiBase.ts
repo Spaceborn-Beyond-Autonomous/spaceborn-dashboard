@@ -2,7 +2,7 @@
 
 import { getAccessToken, getRefreshToken, setTokens } from './auth';
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
 function getAuthHeaders() {
     const token = getAccessToken();
@@ -26,7 +26,7 @@ async function refreshAndRetry(path: string, options: any) {
 
     // Try to refresh the token
     try {
-        const refreshRes = await fetch(`${BACKEND_URL}/auth/token/refresh/`, {
+        const refreshRes = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/auth/token/refresh/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh: refreshToken }),
@@ -42,7 +42,7 @@ async function refreshAndRetry(path: string, options: any) {
         setTokens(access);
 
         // Retry original request with new token
-        return fetch(`${BACKEND_URL}/${path}`, {
+        return fetch(`${NEXT_PUBLIC_BACKEND_URL}/${path}`, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ async function refreshAndRetry(path: string, options: any) {
 export async function api(path: string, options: any = {}) {
     const headers = getAuthHeaders();
 
-    const res = await fetch(`${BACKEND_URL}/${path}`, {
+    const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/${path}`, {
         ...options,
         headers: {
             ...headers,

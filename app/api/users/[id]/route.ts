@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
 export async function PUT(
     request: NextRequest,
@@ -17,7 +17,7 @@ export async function PUT(
     try {
         const body = await request.json();
 
-        const response = await fetch(`${BACKEND_URL}/users/${params.id}/`, {
+        const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/${params.id}/`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -47,7 +47,7 @@ export async function DELETE(
     }
 
     try {
-        const response = await fetch(`${BACKEND_URL}/users/${params.id}/`, {
+        const response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/${params.id}/`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
