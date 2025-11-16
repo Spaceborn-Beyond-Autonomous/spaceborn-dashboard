@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import useSWR from 'swr';
+import { useState, useEffect } from 'react';
+import { listTeams } from '@/lib/api/teams';
+import { listUsers } from '@/lib/api/users';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Users as UsersIcon } from 'lucide-react';
-
-const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 interface User {
     id: string;
@@ -28,16 +27,25 @@ interface TeamsClientProps {
 }
 
 export default function TeamsClient({ initialTeams, initialUsers, user }: TeamsClientProps) {
-    // Use SWR for live updates (optional)
-    const { data: teams = initialTeams } = useSWR<Team[]>('/api/teams', fetcher, {
-        fallbackData: initialTeams,
-        refreshInterval: 10000, // Refresh every 10 seconds
-    });
+    const [teams, setTeams] = useState(initialTeams);
+    const [users, setUsers] = useState(initialUsers);
 
-    const { data: users = initialUsers } = useSWR<User[]>('/api/users', fetcher, {
-        fallbackData: initialUsers,
-        refreshInterval: 30000, // Refresh every 30 seconds
-    });
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const [teamsData, usersData] = await Promise.all([
+                    listTeams(),
+                    listUsers(),
+                ]);
+                setTeams(teamsData);
+                setUsers(usersData);
+            } catch (error) {
+                console.error('Failed to refresh data:', error);
+            }
+        }, 10000); // Refresh every 10 seconds
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="flex min-h-screen">
