@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  UserCog
+  UserCog,
+  Presentation
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,7 +49,8 @@ const Sidebar = ({ user }: SidebarProps) => {
     const baseItems = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/teams', label: 'Teams', icon: Users },
-      { href: '/tasks', label: 'Tasks', icon: CheckSquare }
+      { href: '/tasks', label: 'Tasks', icon: CheckSquare },
+      { href: '/meetings', label: 'Meetings', icon: Presentation }
     ];
 
     if (user.role === 'admin') {
