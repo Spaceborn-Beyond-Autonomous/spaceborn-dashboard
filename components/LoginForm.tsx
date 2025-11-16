@@ -54,8 +54,8 @@ export default function LoginForm() {
             const data = await login({ email, password });
 
             if (data.access) {
+                // Tokens are already stored in localStorage by login function
                 router.push('/dashboard');
-                router.refresh();
             } else {
                 setGeneralError(data.error || 'Invalid email or password');
             }

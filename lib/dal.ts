@@ -1,8 +1,6 @@
-'use server'
+'use client'
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { cache } from 'react';
+import { getAccessToken } from './auth';
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
 
@@ -15,12 +13,11 @@ export interface User {
     role: UserRole;
 }
 
-export const verifySession = cache(async () => {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('accessToken')?.value;
+export async function verifySession() {
+    const token = getAccessToken();
 
     if (!token) {
-        redirect('/login');
+        throw new Error('No access token');
     }
 
     try {
@@ -37,16 +34,16 @@ export const verifySession = cache(async () => {
         const user: User = await response.json();
         return { user };
     } catch (error) {
-        redirect('/login');
+        throw error;
     }
-});
+}
 
 // Helper function to check if user has required role
 export async function requireRole(allowedRoles: UserRole[]) {
     const { user } = await verifySession();
 
     if (!allowedRoles.includes(user.role)) {
-        redirect('/unauthorized');
+        throw new Error('Unauthorized');
     }
 
     return { user };

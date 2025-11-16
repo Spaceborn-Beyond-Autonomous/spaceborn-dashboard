@@ -29,6 +29,10 @@ export function AuthProvider({ children }: any) {
       setUser(data.user ?? null);
       setRole(data.role ?? "");
       setLoading(false);
+    }).catch(() => {
+      // If dashboard fetch fails, clear tokens and set loading to false
+      clearTokens();
+      setLoading(false);
     });
   }, []);
 

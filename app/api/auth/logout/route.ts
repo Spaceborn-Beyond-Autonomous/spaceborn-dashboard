@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function POST() {
-    const cookieStore = await cookies();
-
-    // Delete auth cookies
-    cookieStore.delete('accessToken');
-    cookieStore.delete('refreshToken');
-
+    // Tokens are cleared client-side, this endpoint can be used for additional cleanup if needed
     return NextResponse.json({ success: true });
 }

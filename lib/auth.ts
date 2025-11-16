@@ -1,45 +1,37 @@
-'use server'
-
-import { cookies } from 'next/headers';
+'use client'
 
 const ACCESS = "accessToken";
 const REFRESH = "refreshToken";
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
 
-export async function setTokens(access: string, refresh?: string) {
-    const cookieStore = await cookies();
-
-    cookieStore.set(ACCESS, access, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60, // 1 hour
-    });
-
-    if (refresh) {
-        cookieStore.set(REFRESH, refresh, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7, // 7 days
-        });
+export function setTokens(access: string, refresh?: string) {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(ACCESS, access);
+        if (refresh) {
+            localStorage.setItem(REFRESH, refresh);
+        }
     }
 }
 
-export async function getAccessToken() {
-    const cookieStore = await cookies();
-    return cookieStore.get(ACCESS)?.value;
+export function getAccessToken() {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem(ACCESS);
+    }
+    return null;
 }
 
-export async function getRefreshToken() {
-    const cookieStore = await cookies();
-    return cookieStore.get(REFRESH)?.value;
+export function getRefreshToken() {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem(REFRESH);
+    }
+    return null;
 }
 
-export async function clearTokens() {
-    const cookieStore = await cookies();
-    cookieStore.delete(ACCESS);
-    cookieStore.delete(REFRESH);
+export function clearTokens() {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem(ACCESS);
+        localStorage.removeItem(REFRESH);
+    }
 }
 
 export async function login(credentials: { email: string; password: string }) {
@@ -74,14 +66,14 @@ export async function login(credentials: { email: string; password: string }) {
     console.log('Response data:', data);
 
     if (data.access) {
-        await setTokens(data.access, data.refresh);
+        setTokens(data.access, data.refresh);
     }
 
     return data;
 }
 
 export async function refreshAccessToken() {
-    const refresh = await getRefreshToken();
+    const refresh = getRefreshToken();
     if (!refresh) return null;
 
     const res = await fetch(`${BACKEND_URL}/auth/token/refresh/`, {
@@ -93,13 +85,14 @@ export async function refreshAccessToken() {
     const data = await res.json();
 
     if (data.access) {
-        await setTokens(data.access);
+        setTokens(data.access);
     }
 
     return data.access || null;
 }
 
 export async function logout() {
+    clearTokens();
     const response = await fetch('/api/auth/logout', {
         method: 'POST',
     });

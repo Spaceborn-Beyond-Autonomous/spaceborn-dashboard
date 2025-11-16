@@ -1,16 +1,14 @@
-'use server'
+'use client'
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { getAccessToken, getRefreshToken, setTokens } from './auth';
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000/api/v1";
 
-async function getAuthHeaders() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('accessToken')?.value;
+function getAuthHeaders() {
+    const token = getAccessToken();
 
     if (!token) {
-        redirect('/login');
+        throw new Error('No access token available');
     }
 
     return {
@@ -20,11 +18,10 @@ async function getAuthHeaders() {
 }
 
 async function refreshAndRetry(path: string, options: any) {
-    const cookieStore = await cookies();
-    const refreshToken = cookieStore.get('refreshToken')?.value;
+    const refreshToken = getRefreshToken();
 
     if (!refreshToken) {
-        redirect('/login');
+        throw new Error('No refresh token available');
     }
 
     // Try to refresh the token
@@ -36,18 +33,13 @@ async function refreshAndRetry(path: string, options: any) {
         });
 
         if (!refreshRes.ok) {
-            redirect('/login');
+            throw new Error('Token refresh failed');
         }
 
         const { access } = await refreshRes.json();
 
         // Set new access token
-        cookieStore.set('accessToken', access, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60, // 1 hour
-        });
+        setTokens(access);
 
         // Retry original request with new token
         return fetch(`${BACKEND_URL}/${path}`, {
@@ -59,12 +51,12 @@ async function refreshAndRetry(path: string, options: any) {
             },
         });
     } catch (error) {
-        redirect('/login');
+        throw error;
     }
 }
 
 export async function api(path: string, options: any = {}) {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
 
     const res = await fetch(`${BACKEND_URL}/${path}`, {
         ...options,
@@ -76,9 +68,12 @@ export async function api(path: string, options: any = {}) {
 
     // Handle 401 by refreshing token
     if (res.status === 401) {
-        const retryRes = await refreshAndRetry(path, options);
-        if (!retryRes) redirect('/login');
-        return retryRes.json();
+        try {
+            const retryRes = await refreshAndRetry(path, options);
+            return retryRes.json();
+        } catch (error) {
+            throw error;
+        }
     }
 
     if (!res.ok) {
