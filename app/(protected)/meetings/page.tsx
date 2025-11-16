@@ -1,17 +1,23 @@
-import { getDashboard } from '@/lib/api/dashboard';
-import { listMeetings } from '@/lib/api/meetings';
+'use client';
+
+import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import MeetingsClient from '@/components/Meetings';
 
-export default async function MeetingsPage() {
-    const dashboard = await getDashboard();
-    const meetings = await listMeetings();
+export default function MeetingsPage() {
+    const { user } = useAuth();
+    const { meetings } = useData();
 
-    const user = {
-        id: dashboard.user.id.toString(),
-        name: dashboard.user.name,
-        email: dashboard.user.email,
-        role: dashboard.user.role,
+    if (!user) {
+        return <div>Please log in</div>;
+    }
+
+    const userFormatted = {
+        id: user.id.toString(),
+        name: user.name,
+        email: user.email,
+        role: (user as any).role,
     };
 
-    return <MeetingsClient user={user} initialMeetings={meetings} />;
+    return <MeetingsClient user={userFormatted} initialMeetings={meetings} />;
 }

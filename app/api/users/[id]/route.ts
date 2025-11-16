@@ -5,8 +5,9 @@ const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://l
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
+    const params = await context.params;
     const cookieStore = await cookies();
     const token = cookieStore.get('accessToken')?.value;
 
@@ -37,8 +38,9 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
+    const params = await context.params;
     const cookieStore = await cookies();
     const token = cookieStore.get('accessToken')?.value;
 

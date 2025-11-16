@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { getAccessToken, clearTokens } from "@/lib/auth";
 import { getDashboard } from "@/lib/api/dashboard";
 
@@ -12,6 +12,14 @@ export const AuthContext = createContext({
   loading: true,
   logout: () => { },
 });
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export function AuthProvider({ children }: any) {
   const [user, setUser] = useState<User | null>(null);

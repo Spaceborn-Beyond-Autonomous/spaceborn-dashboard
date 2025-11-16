@@ -91,7 +91,7 @@ export default function Tasks() {
   // Memoized permission checker
   const canEditTask = useCallback((task: any) => {
     if (!user) return false;
-    return user.role === 'admin' || user.role === 'core' || task.assignedTo === user.id;
+    return (user as any).role === 'admin' || (user as any).role === 'core' || task.assignedTo === user.id;
   }, [user]);
 
   // Memoized status change handler
@@ -117,9 +117,9 @@ export default function Tasks() {
 
   return (
     <div className="flex min-h-screen bg-black">
-      <Sidebar />
+      <Sidebar user={user as any} />
       <div className="flex-1 md:ml-64">
-        <Header title="Tasks" />
+        <Header title="Tasks" user={user as any} />
         <main className="p-6">
           {/* Tasks Table */}
           <div className="bg-[#111] border border-[#222] rounded overflow-hidden">
