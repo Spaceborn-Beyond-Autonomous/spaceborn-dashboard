@@ -46,9 +46,6 @@ export async function login(credentials: { email: string; password: string }) {
         password
     };
 
-    console.log('Payload being sent:', payload);
-    console.log('Stringified payload:', JSON.stringify(payload));
-
     const requestOptions = {
         method: "POST",
         headers: {
@@ -57,16 +54,16 @@ export async function login(credentials: { email: string; password: string }) {
         body: JSON.stringify(payload),
     };
 
-    console.log('Request options:', requestOptions);
-
-    const res = await fetch(`${BACKEND_URL}/auth/login/`, requestOptions);
+    const res = await fetch(`${BACKEND_URL}/users/login/`, requestOptions);
 
     const data = await res.json();
-    console.log('Response status:', res.status);
     console.log('Response data:', data);
+    if (data.error) {
+        throw new Error(data.error);
+    }
 
-    if (data.access) {
-        setTokens(data.access, data.refresh);
+    if (data.access_token) {
+        setTokens(data.access_token);
     }
 
     return data;

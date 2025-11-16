@@ -53,14 +53,14 @@ export default function LoginForm() {
         try {
             const data = await login({ email, password });
 
-            if (data.access) {
+            if (data.access_token) {
                 // Tokens are already stored in localStorage by login function
                 router.push('/dashboard');
             } else {
-                setGeneralError(data.error || 'Invalid email or password');
+                setGeneralError('Invalid email or password');
             }
-        } catch (err) {
-            setGeneralError('An error occurred. Please try again.');
+        } catch (err: any) {
+            setGeneralError(err.message || 'An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
         }
