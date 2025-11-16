@@ -42,21 +42,21 @@ export async function clearTokens() {
     cookieStore.delete(REFRESH);
 }
 
-export async function login(email: string, password: string) {
+export async function login(credentials: { email: string; password: string }) {
+    const { email, password } = credentials;
+
     if (!email || !password) {
         throw new Error('Email and password are required');
     }
 
-    // Ensure we're sending an object, not an array
     const payload = {
-        email: email,
-        password: password
+        email,
+        password
     };
 
     console.log('Payload being sent:', payload);
     console.log('Stringified payload:', JSON.stringify(payload));
 
-    // Let's also check if there are any headers or other configurations affecting this
     const requestOptions = {
         method: "POST",
         headers: {
