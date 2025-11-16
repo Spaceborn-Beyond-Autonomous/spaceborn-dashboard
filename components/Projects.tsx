@@ -8,6 +8,8 @@ import { FolderKanban, Plus, Edit, Trash2, X } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
+const BACKEND_URL = process.env.BACKEND_URL;
+
 interface User {
     id: string;
     name: string;
@@ -29,10 +31,10 @@ interface Project {
 
 interface ProjectsClientProps {
     user: User;
-    initialProjects: Project[];
+    projects: Project[];
 }
 
-export default function ProjectsClient({ user, initialProjects }: ProjectsClientProps) {
+export default function ProjectsClient({ user, projects }: ProjectsClientProps) {
     const [showModal, setShowModal] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [formData, setFormData] = useState({
@@ -43,16 +45,6 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
         endDate: '',
         budget: '',
     });
-
-    // Use SWR for live updates
-    const { data: projects = initialProjects, mutate } = useSWR<Project[]>(
-        '/api/projects',
-        fetcher,
-        {
-            fallbackData: initialProjects,
-            refreshInterval: 10000,
-        }
-    );
 
     const handleOpenModal = (project?: Project) => {
         if (project) {
@@ -103,7 +95,6 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                 }),
             });
 
-            mutate();
             handleCloseModal();
         } catch (error) {
             console.error('Failed to save project:', error);
@@ -117,7 +108,6 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
             await fetch(`/api/projects/${projectId}`, {
                 method: 'DELETE',
             });
-            mutate();
         } catch (error) {
             console.error('Failed to delete project:', error);
         }
@@ -155,86 +145,118 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projects.map((project) => (
-                            <div
-                                key={project.id}
-                                className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]"
-                            >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                                            <FolderKanban className="h-5 w-5 text-black" />
+                    {/* Empty State Check */}
+                    {!projects || projects.length === 0 ? (
+                        <div className="flex items-center justify-center min-h-[500px]">
+                            <div className="text-center max-w-md">
+                                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#1a1a1a] flex items-center justify-center">
+                                    <FolderKanban className="h-12 w-12 text-[#444]" />
+                                </div>
+                                <h3 className="text-2xl font-semibold text-white mb-3">
+                                    No Projects Yet
+                                </h3>
+                                <p className="text-[#aaa] mb-8 leading-relaxed">
+                                    Get started by creating your first project. Track progress, manage
+                                    budgets, and collaborate with your team.
+                                </p>
+                                <button
+                                    onClick={() => handleOpenModal()}
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded hover:bg-gray-200 transition-all font-medium"
+                                >
+                                    <Plus className="h-5 w-5" />
+                                    Create Your First Project
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Projects Grid */
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {projects.map((project) => (
+                                <div
+                                    key={project.id}
+                                    className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]"
+                                >
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                                                <FolderKanban className="h-5 w-5 text-black" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-white">
+                                                    {project.name}
+                                                </h3>
+                                                <span
+                                                    className={`text-xs px-2 py-1 rounded uppercase tracking-wide ${getStatusColor(
+                                                        project.status
+                                                    )}`}
+                                                >
+                                                    {project.status.replace('_', ' ')}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                                            <span
-                                                className={`text-xs px-2 py-1 rounded uppercase tracking-wide ${getStatusColor(
-                                                    project.status
-                                                )}`}
-                                            >
-                                                {project.status.replace('_', ' ')}
+                                    </div>
+
+                                    <p className="text-sm text-[#aaa] mb-4 line-clamp-2">
+                                        {project.description}
+                                    </p>
+
+                                    {/* Progress Bar */}
+                                    <div className="mb-4">
+                                        <div className="flex justify-between text-xs text-[#aaa] mb-1">
+                                            <span>Progress</span>
+                                            <span>{project.progress}%</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-[#222] rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-white transition-all duration-300"
+                                                style={{ width: `${project.progress}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-xs text-[#aaa] mb-4">
+                                        <div className="flex justify-between">
+                                            <span>Start Date:</span>
+                                            <span>
+                                                {new Date(project.startDate).toLocaleDateString()}
                                             </span>
                                         </div>
+                                        {project.endDate && (
+                                            <div className="flex justify-between">
+                                                <span>End Date:</span>
+                                                <span>
+                                                    {new Date(project.endDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {project.budget && (
+                                            <div className="flex justify-between">
+                                                <span>Budget:</span>
+                                                <span>${project.budget.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 pt-4 border-t border-[#222]">
+                                        <button
+                                            onClick={() => handleOpenModal(project)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] rounded transition-all text-white text-sm"
+                                        >
+                                            <Edit className="h-3 w-3" />
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(project.id)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-red-500/20 rounded transition-all text-white text-sm"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
-
-                                <p className="text-sm text-[#aaa] mb-4 line-clamp-2">
-                                    {project.description}
-                                </p>
-
-                                {/* Progress Bar */}
-                                <div className="mb-4">
-                                    <div className="flex justify-between text-xs text-[#aaa] mb-1">
-                                        <span>Progress</span>
-                                        <span>{project.progress}%</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-[#222] rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-white transition-all duration-300"
-                                            style={{ width: `${project.progress}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 text-xs text-[#aaa] mb-4">
-                                    <div className="flex justify-between">
-                                        <span>Start Date:</span>
-                                        <span>{new Date(project.startDate).toLocaleDateString()}</span>
-                                    </div>
-                                    {project.endDate && (
-                                        <div className="flex justify-between">
-                                            <span>End Date:</span>
-                                            <span>{new Date(project.endDate).toLocaleDateString()}</span>
-                                        </div>
-                                    )}
-                                    {project.budget && (
-                                        <div className="flex justify-between">
-                                            <span>Budget:</span>
-                                            <span>${project.budget.toLocaleString()}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-2 pt-4 border-t border-[#222]">
-                                    <button
-                                        onClick={() => handleOpenModal(project)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] rounded transition-all text-white text-sm"
-                                    >
-                                        <Edit className="h-3 w-3" />
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(project.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-red-500/20 rounded transition-all text-white text-sm"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Modal */}
                     {showModal && (
@@ -257,7 +279,9 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                                         <input
                                             type="text"
                                             value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, name: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded text-white focus:outline-none focus:border-white"
                                             required
                                         />
@@ -279,11 +303,16 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-[#aaa] mb-2">Status</label>
+                                        <label className="block text-sm font-medium text-[#aaa] mb-2">
+                                            Status
+                                        </label>
                                         <select
                                             value={formData.status}
                                             onChange={(e) =>
-                                                setFormData({ ...formData, status: e.target.value as Project['status'] })
+                                                setFormData({
+                                                    ...formData,
+                                                    status: e.target.value as Project['status'],
+                                                })
                                             }
                                             className="w-full px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded text-white focus:outline-none focus:border-white"
                                         >
@@ -301,7 +330,9 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                                         <input
                                             type="date"
                                             value={formData.startDate}
-                                            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, startDate: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded text-white focus:outline-none focus:border-white"
                                             required
                                         />
@@ -314,7 +345,9 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                                         <input
                                             type="date"
                                             value={formData.endDate}
-                                            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, endDate: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded text-white focus:outline-none focus:border-white"
                                         />
                                     </div>
@@ -326,7 +359,9 @@ export default function ProjectsClient({ user, initialProjects }: ProjectsClient
                                         <input
                                             type="number"
                                             value={formData.budget}
-                                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, budget: e.target.value })
+                                            }
                                             className="w-full px-4 py-2 bg-[#1a1a1a] border border-[#222] rounded text-white focus:outline-none focus:border-white"
                                             placeholder="10000"
                                         />
