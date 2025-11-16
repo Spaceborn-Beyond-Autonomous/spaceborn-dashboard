@@ -27,7 +27,7 @@ export function AuthProvider({ children }: any) {
 
     getDashboard().then((data) => {
       setUser(data.user ?? null);
-      setRole(data.role ?? "");
+      setRole(data.user?.role ?? "");
       setLoading(false);
     }).catch(() => {
       // If dashboard fetch fails, clear tokens and set loading to false
