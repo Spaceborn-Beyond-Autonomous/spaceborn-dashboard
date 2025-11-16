@@ -43,13 +43,35 @@ export async function clearTokens() {
 }
 
 export async function login(email: string, password: string) {
-    const res = await fetch(`${BACKEND_URL}/auth/token/`, {
+    if (!email || !password) {
+        throw new Error('Email and password are required');
+    }
+
+    // Ensure we're sending an object, not an array
+    const payload = {
+        email: email,
+        password: password
+    };
+
+    console.log('Payload being sent:', payload);
+    console.log('Stringified payload:', JSON.stringify(payload));
+
+    // Let's also check if there are any headers or other configurations affecting this
+    const requestOptions = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-    });
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+    };
+
+    console.log('Request options:', requestOptions);
+
+    const res = await fetch(`${BACKEND_URL}/auth/login/`, requestOptions);
 
     const data = await res.json();
+    console.log('Response status:', res.status);
+    console.log('Response data:', data);
 
     if (data.access) {
         await setTokens(data.access, data.refresh);
