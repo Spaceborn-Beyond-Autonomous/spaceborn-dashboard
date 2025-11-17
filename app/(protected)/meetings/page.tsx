@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import MeetingsClient from '@/components/Meetings';
+import { User } from '@/lib/types/users';
 
 export default function MeetingsPage() {
     const { user } = useAuth();
@@ -14,10 +15,10 @@ export default function MeetingsPage() {
 
     const userFormatted = {
         id: user.id.toString(),
-        name: user.name,
+        username: user.username,
         email: user.email,
         role: (user as any).role,
-    };
+    } as User;
 
     return <MeetingsClient user={userFormatted} initialMeetings={meetings} />;
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { getAccessToken, getRefreshToken, setTokens } from './auth';
+import { getAccessToken, setTokens } from './auth';
 
 const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000/api/v1";
 
@@ -18,41 +18,8 @@ function getAuthHeaders() {
 }
 
 async function refreshAndRetry(path: string, options: any) {
-    const refreshToken = getRefreshToken();
-
-    if (!refreshToken) {
-        throw new Error('No refresh token available');
-    }
-
-    // Try to refresh the token
-    try {
-        const refreshRes = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/auth/token/refresh/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh: refreshToken }),
-        });
-
-        if (!refreshRes.ok) {
-            throw new Error('Token refresh failed');
-        }
-
-        const { access } = await refreshRes.json();
-
-        // Set new access token
-        setTokens(access);
-
-        // Retry original request with new token
-        return fetch(`${NEXT_PUBLIC_BACKEND_URL}/${path}`, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access}`,
-                ...(options.headers || {}),
-            },
-        });
-    } catch (error) {
-        throw error;
-    }
+    // Since we removed refresh tokens, we'll just throw an error
+    throw new Error('Token refresh not available - please log in again');
 }
 
 export async function api(path: string, options: any = {}) {
@@ -66,14 +33,9 @@ export async function api(path: string, options: any = {}) {
         },
     });
 
-    // Handle 401 by refreshing token
+    // Handle 401 by throwing error (no refresh token)
     if (res.status === 401) {
-        try {
-            const retryRes = await refreshAndRetry(path, options);
-            return retryRes.json();
-        } catch (error) {
-            throw error;
-        }
+        throw new Error('Authentication failed - please log in again');
     }
 
     if (!res.ok) {
