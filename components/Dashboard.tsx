@@ -20,7 +20,7 @@ export default function Dashboard() {
     if (!userData) return null;
 
     const user = {
-        id: userData.id.toString(),
+        id: userData.id,
         username: userData.username,
         email: userData.email,
         role: userData.role,

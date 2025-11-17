@@ -9,11 +9,10 @@ import { User } from '@/lib/types/users';
 
 interface MeetingsClientProps {
     user: User;
-    initialMeetings: Meeting[];
 }
 
-export default function MeetingsClient({ user, initialMeetings }: MeetingsClientProps) {
-    const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings);
+export default function MeetingsClient({ user }: MeetingsClientProps) {
+    const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
