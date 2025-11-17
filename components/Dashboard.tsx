@@ -4,22 +4,27 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, FolderKanban, Clock, Users, DollarSign } from "lucide-react";
 import { getDashboard } from "@/lib/api/dashboard";
 import { DashboardResponse, AdminDashboard, CoreDashboard, EmployeeDashboard } from "@/lib/types/dashboard";
+import { User } from "@/lib/types/users";
+import { getCurrentUser } from "@/lib/api/users";
 
 export default function Dashboard() {
     const [data, setData] = useState<DashboardResponse | null>(null);
+    const [userData, setUserData] = useState<User | null>(null);
 
     useEffect(() => {
         getDashboard().then((d) => setData(d));
+        getCurrentUser().then((u) => { setUserData(u); })
     }, []);
 
     if (!data || !data.user) return null;
+    if (!userData) return null;
 
     const user = {
-        id: data.user.id.toString(),
-        name: data.user.name,
-        email: data.user.email,
-        role: data.user.role,
-    };
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+    } as User;
 
     // Role-specific data extraction
     let metrics: { runningTasks: number; pendingTasks: number; completedTasks: number; runningProjects: number; totalUsers?: number; totalRevenue?: number } = {

@@ -4,21 +4,15 @@ import { useState, useEffect } from 'react';
 import { Calendar, Plus, Edit, Trash2, X, Users, Clock, MapPin } from 'lucide-react';
 import { listMeetings, createMeeting, updateMeeting, deleteMeeting, markAttendance, getMeetingAttendance, getUserAttendanceCounts } from '@/lib/api/meetings';
 import type { Meeting, MeetingCreate, MeetingUpdate, MeetingAttendanceCreate, MeetingAttendanceRead, UserAttendanceCount } from '@/lib/types/meetings';
+import { User } from '@/lib/types/users';
 
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'core' | 'employee';
-}
 
 interface MeetingsClientProps {
     user: User;
-    initialMeetings: Meeting[];
 }
 
-export default function MeetingsClient({ user, initialMeetings }: MeetingsClientProps) {
-    const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings);
+export default function MeetingsClient({ user }: MeetingsClientProps) {
+    const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);

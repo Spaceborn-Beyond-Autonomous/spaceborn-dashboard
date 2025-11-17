@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldLabel,
-    FieldDescription,
     FieldError,
     FieldGroup,
 } from '@/components/ui/field';
 import { login } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -21,6 +21,7 @@ export default function LoginForm() {
     const [generalError, setGeneralError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const { refreshAuth } = useAuth();
 
     const validateForm = () => {
         const newErrors: { email?: string; password?: string } = {};
@@ -55,6 +56,8 @@ export default function LoginForm() {
 
             if (data.access_token) {
                 // Tokens are already stored in localStorage by login function
+                // Refresh auth context to load user data
+                refreshAuth();
                 router.push('/dashboard');
             } else {
                 setGeneralError('Invalid email or password');

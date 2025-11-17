@@ -1,4 +1,5 @@
 import { api } from "../apiBase";
+import { User } from "../types/users";
 
 export function listUsers() {
     return api("users/");
@@ -32,7 +33,7 @@ export function deleteUser(id: number) {
     });
 }
 
-export function getCurrentUser() {
+export function getCurrentUser(): Promise<User> {
     return api("users/me/");
 }
 

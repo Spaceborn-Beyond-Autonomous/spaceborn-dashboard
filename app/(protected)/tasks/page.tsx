@@ -1,10 +1,11 @@
 'use client';
-import { useMemo, useCallback, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal } from 'react';
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
-import { users } from '@/mock/mockData';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
+import { listTasks, updateTask } from '@/lib/api/tasks';
+import { listUsers } from '@/lib/api/users';
+import { Task, TaskStatus } from '@/lib/types/tasks';
+import { User } from '@/lib/types/users';
 
 import {
   Select,
@@ -12,46 +13,50 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 // Constants
-const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
-type TaskStatus = typeof STATUS_OPTIONS[number];
+const STATUS_OPTIONS: TaskStatus[] = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.DONE];
+
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  'todo': 'Pending',
+  'in_progress': 'In Progress',
+  'done': 'Completed',
+};
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  'Pending': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-  'In Progress': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-  'Completed': 'bg-green-500/20 text-green-400 border-green-500/50',
+  'todo': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+  'in_progress': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+  'done': 'bg-green-500/20 text-green-400 border-green-500/50',
 };
 
 // Helper functions
-const getUserName = (userId: number): string => {
-  const foundUser = users.find(u => u.id === userId);
-  return foundUser?.name ?? 'Unknown';
-};
-
 const getStatusColor = (status: TaskStatus): string => {
   return STATUS_COLORS[status] || 'bg-[#222] text-white border-white';
+};
+
+const getStatusLabel = (status: TaskStatus): string => {
+  return STATUS_LABELS[status] || status;
 };
 
 // Sub-components
 interface StatusBadgeProps {
   status: TaskStatus;
   canEdit: boolean;
-  onStatusChange: (newStatus: string) => void;
+  onStatusChange: (newStatus: TaskStatus) => void;
 }
 
 const StatusBadge = ({ status, canEdit, onStatusChange }: StatusBadgeProps) => {
   if (!canEdit) {
     return (
       <span className={`inline-block px-3 py-1.5 rounded-md text-xs font-medium border ${getStatusColor(status)}`}>
-        {status}
+        {getStatusLabel(status)}
       </span>
     );
   }
 
   return (
-    <Select value={status} onValueChange={onStatusChange}>
+    <Select value={status} onValueChange={(value) => onStatusChange(value as TaskStatus)}>
       <SelectTrigger className={`w-[140px] h-8 text-xs font-medium px-3 rounded-md border outline-none cursor-pointer transition-all hover:brightness-110 ${getStatusColor(status)}`}>
         <SelectValue />
       </SelectTrigger>
@@ -62,7 +67,7 @@ const StatusBadge = ({ status, canEdit, onStatusChange }: StatusBadgeProps) => {
             className={`cursor-pointer transition-all hover:brightness-125 focus:brightness-125 text-xs font-medium mb-1 mt-1 px-3 py-2 ${getStatusColor(option)}`}
             value={option}
           >
-            {option}
+            {getStatusLabel(option)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -86,25 +91,73 @@ const StatCard = ({ title, count, description }: StatCardProps) => (
 
 export default function Tasks() {
   const { user } = useAuth();
-  const { tasks, updateTaskStatus } = useData();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks and users
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [tasksData, usersData] = await Promise.all([
+        listTasks(),
+        listUsers(),
+      ]);
+      setTasks(tasksData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Helper to get user name
+  const getUserName = useCallback((userId: number): string => {
+    const foundUser = users.find(u => u.id === userId);
+    return foundUser?.username ?? 'Unknown';
+  }, [users]);
 
   // Memoized permission checker
-  const canEditTask = useCallback((task: any) => {
+  const canEditTask = useCallback((task: Task) => {
     if (!user) return false;
-    return (user as any).role === 'admin' || (user as any).role === 'core' || task.assignedTo === user.id;
+    return user.role === 'admin' || user.role === 'core' || task.assignee_id === user.id;
   }, [user]);
 
-  // Memoized status change handler
-  const handleStatusChange = useCallback((taskId: number, newStatus: string) => {
-    updateTaskStatus(taskId, newStatus);
-  }, [updateTaskStatus]);
+  // Status change handler with API call
+  const handleStatusChange = useCallback(async (taskId: number, newStatus: TaskStatus) => {
+    try {
+      await updateTask(taskId, { status: newStatus });
+      // Update local state optimistically
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, status: newStatus } : task
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update task status:', error);
+      // Optionally refetch to ensure consistency
+      fetchData();
+    }
+  }, [fetchData]);
 
   // Memoized task statistics
   const taskStats = useMemo(() => ({
-    pending: tasks.filter((task: { status: string; }) => task.status === 'Pending').length,
-    inProgress: tasks.filter((task: { status: string; }) => task.status === 'In Progress').length,
-    completed: tasks.filter((task: { status: string; }) => task.status === 'Completed').length,
+    pending: tasks.filter(task => task.status === 'todo').length,
+    inProgress: tasks.filter(task => task.status === 'in_progress').length,
+    completed: tasks.filter(task => task.status === 'done').length,
   }), [tasks]);
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   // Early return if no user
   if (!user) {
@@ -115,73 +168,83 @@ export default function Tasks() {
     );
   }
 
-  return (
-    <div className="flex min-h-screen bg-black">
-      <Sidebar user={user as any} />
-      <div className="flex-1 md:ml-64">
-        <Header title="Tasks" user={user as any} />
-        <main className="p-6">
-          {/* Tasks Table */}
-          <div className="bg-[#111] border border-[#222] rounded overflow-hidden">
-            {tasks.length === 0 ? (
-              <div className="text-center py-12 text-[#aaa]">
-                No tasks available
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-black border-b border-[#222]">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Task</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Assigned To</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Deadline</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map((task: { id: number; title: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; status: TaskStatus; assignedTo: number; deadline: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }, index: number) => (
-                      <tr
-                        key={task.id}
-                        className={`${index % 2 === 0 ? 'bg-[#111]' : 'bg-[#0a0a0a]'} hover:bg-[#1a1a1a] transition-colors`}
-                      >
-                        <td className="py-3 px-4 text-white font-medium">{task.title}</td>
-                        <td className="py-3 px-4">
-                          <StatusBadge
-                            status={task.status}
-                            canEdit={canEditTask(task)}
-                            onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                          />
-                        </td>
-                        <td className="py-3 px-4 text-[#aaa]">{getUserName(task.assignedTo)}</td>
-                        <td className="py-3 px-4 text-[#aaa]">{task.deadline}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Pending Tasks"
-              count={taskStats.pending}
-              description="Tasks waiting to start"
-            />
-            <StatCard
-              title="In Progress"
-              count={taskStats.inProgress}
-              description="Currently active tasks"
-            />
-            <StatCard
-              title="Completed"
-              count={taskStats.completed}
-              description="Finished tasks"
-            />
-          </div>
-        </main>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-[#aaa]">Loading tasks...</p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <main className="p-6">
+      {/* Statistics Cards */}
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Pending Tasks"
+          count={taskStats.pending}
+          description="Tasks waiting to start"
+        />
+        <StatCard
+          title="In Progress"
+          count={taskStats.inProgress}
+          description="Currently active tasks"
+        />
+        <StatCard
+          title="Completed"
+          count={taskStats.completed}
+          description="Finished tasks"
+        />
+      </div>
+
+      {/* Tasks Table */}
+      <div className="bg-[#111] border border-[#222] rounded overflow-hidden">
+        {tasks.length === 0 ? (
+          <div className="text-center py-12 text-[#aaa]">
+            No tasks available
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-black border-b border-[#222]">
+                <tr>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Task</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Description</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Assigned To</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task, index) => (
+                  <tr
+                    key={task.id}
+                    className={`${index % 2 === 0 ? 'bg-[#111]' : 'bg-[#0a0a0a]'} hover:bg-[#1a1a1a] transition-colors`}
+                  >
+                    <td className="py-3 px-4 text-white font-medium">{task.title}</td>
+                    <td className="py-3 px-4 text-[#aaa] text-sm max-w-xs truncate">
+                      {task.description || 'No description'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <StatusBadge
+                        status={task.status}
+                        canEdit={canEditTask(task)}
+                        onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-[#aaa]">
+                      {task.assignee_id ? getUserName(task.assignee_id) : 'Unassigned'}
+                    </td>
+                    <td className="py-3 px-4 text-[#aaa] text-sm">
+                      {formatDate(task.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

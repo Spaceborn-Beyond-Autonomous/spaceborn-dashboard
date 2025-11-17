@@ -1,21 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import useSWR from 'swr';
-import Sidebar from './Sidebar';
-import Header from './Header';
 import { FolderKanban, Plus, Edit, Trash2, X } from 'lucide-react';
-
-const fetcher = (url: string) => fetch(url).then(r => r.json());
-
-const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'core' | 'employee';
-}
+import { User } from '@/lib/types/users';
 
 interface Project {
     id: string;
@@ -34,7 +21,7 @@ interface ProjectsClientProps {
     projects: Project[];
 }
 
-export default function ProjectsClient({ user, projects }: ProjectsClientProps) {
+export default function ProjectsClient({ projects }: ProjectsClientProps) {
     const [showModal, setShowModal] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [formData, setFormData] = useState({
