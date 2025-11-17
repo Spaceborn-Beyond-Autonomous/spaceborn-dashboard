@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { AuthContext } from '@/context/AuthContext';
+import { User } from '@/lib/types/users';
 
 export default function ProtectedLayout({
     children,
@@ -30,11 +31,11 @@ export default function ProtectedLayout({
     }
 
     const userObj = {
-        id: user.id.toString(),
+        id: user.id,
         username: user.username,
         email: user.email,
         role: role as 'admin' | 'core' | 'employee',
-    };
+    } as User;
 
     // Determine title based on pathname
     const getTitle = (path: string) => {
