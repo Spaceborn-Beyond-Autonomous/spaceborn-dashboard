@@ -2,15 +2,16 @@
 
 import { createContext, useState, useEffect, useContext } from "react";
 import { getAccessToken, clearTokens } from "@/lib/auth";
-import { getDashboard } from "@/lib/api/dashboard";
+import { getCurrentUser } from "@/lib/api/users";
 
-type User = { id: number; name: string; email: string };
+type User = { id: number; name: string; email: string; role: string };
 
 export const AuthContext = createContext({
   user: null as User | null,
   role: "",
   loading: true,
   logout: () => { },
+  refreshAuth: () => { },
 });
 
 export const useAuth = () => {
@@ -25,24 +26,26 @@ export function AuthProvider({ children }: any) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const token = getAccessToken();
+    console.log("AuthProvider: Retrieved token:", token);
     if (!token) {
       setLoading(false);
       return;
     }
 
-    getDashboard().then((data) => {
-      setUser(data.user ?? null);
-      setRole(data.user?.role ?? "");
+    getCurrentUser().then((data) => {
+      setUser(data ?? null);
+      setRole(data.role ?? "");
       setLoading(false);
     }).catch(() => {
       // If dashboard fetch fails, clear tokens and set loading to false
       clearTokens();
       setLoading(false);
     });
-  }, []);
+  }, [refreshTrigger]);
 
   function logout() {
     clearTokens();
@@ -50,8 +53,12 @@ export function AuthProvider({ children }: any) {
     setRole("");
   }
 
+  function refreshAuth() {
+    setRefreshTrigger(prev => prev + 1);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, role, loading, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, logout, refreshAuth }}>
       {children}
     </AuthContext.Provider>
   );
