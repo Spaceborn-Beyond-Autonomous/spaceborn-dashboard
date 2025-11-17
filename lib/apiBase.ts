@@ -33,8 +33,8 @@ export async function api(path: string, options: any = {}) {
         },
     });
 
-    // Handle 401 by throwing error (no refresh token)
-    if (res.status === 401) {
+    // Handle 401 or 403 by throwing error (no refresh token)
+    if (res.status === 401 || res.status === 403) {
         throw new Error('Authentication failed - please log in again');
     }
 
