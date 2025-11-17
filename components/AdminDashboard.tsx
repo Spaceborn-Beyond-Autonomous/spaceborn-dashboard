@@ -97,7 +97,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
                 });
             } else {
                 // Create user
-                response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/`, {
+                response = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/register`, {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${token}`,
