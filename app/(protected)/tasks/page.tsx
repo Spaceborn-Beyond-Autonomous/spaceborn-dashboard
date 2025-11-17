@@ -116,72 +116,66 @@ export default function Tasks() {
   }
 
   return (
-    <div className="flex min-h-screen bg-black">
-      <Sidebar user={user as any} />
-      <div className="flex-1 md:ml-64">
-        <Header title="Tasks" user={user as any} />
-        <main className="p-6">
-          {/* Tasks Table */}
-          <div className="bg-[#111] border border-[#222] rounded overflow-hidden">
-            {tasks.length === 0 ? (
-              <div className="text-center py-12 text-[#aaa]">
-                No tasks available
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-black border-b border-[#222]">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Task</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Assigned To</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Deadline</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map((task: { id: number; title: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; status: TaskStatus; assignedTo: number; deadline: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }, index: number) => (
-                      <tr
-                        key={task.id}
-                        className={`${index % 2 === 0 ? 'bg-[#111]' : 'bg-[#0a0a0a]'} hover:bg-[#1a1a1a] transition-colors`}
-                      >
-                        <td className="py-3 px-4 text-white font-medium">{task.title}</td>
-                        <td className="py-3 px-4">
-                          <StatusBadge
-                            status={task.status}
-                            canEdit={canEditTask(task)}
-                            onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                          />
-                        </td>
-                        <td className="py-3 px-4 text-[#aaa]">{getUserName(task.assignedTo)}</td>
-                        <td className="py-3 px-4 text-[#aaa]">{task.deadline}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+    <main className="p-6">
+      {/* Tasks Table */}
+      <div className="bg-[#111] border border-[#222] rounded overflow-hidden">
+        {tasks.length === 0 ? (
+          <div className="text-center py-12 text-[#aaa]">
+            No tasks available
           </div>
-
-          {/* Statistics Cards */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Pending Tasks"
-              count={taskStats.pending}
-              description="Tasks waiting to start"
-            />
-            <StatCard
-              title="In Progress"
-              count={taskStats.inProgress}
-              description="Currently active tasks"
-            />
-            <StatCard
-              title="Completed"
-              count={taskStats.completed}
-              description="Finished tasks"
-            />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-black border-b border-[#222]">
+                <tr>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Task</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Assigned To</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[#aaa]">Deadline</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task: { id: number; title: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; status: TaskStatus; assignedTo: number; deadline: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }, index: number) => (
+                  <tr
+                    key={task.id}
+                    className={`${index % 2 === 0 ? 'bg-[#111]' : 'bg-[#0a0a0a]'} hover:bg-[#1a1a1a] transition-colors`}
+                  >
+                    <td className="py-3 px-4 text-white font-medium">{task.title}</td>
+                    <td className="py-3 px-4">
+                      <StatusBadge
+                        status={task.status}
+                        canEdit={canEditTask(task)}
+                        onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-[#aaa]">{getUserName(task.assignedTo)}</td>
+                    <td className="py-3 px-4 text-[#aaa]">{task.deadline}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </main>
+        )}
       </div>
-    </div>
+
+      {/* Statistics Cards */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Pending Tasks"
+          count={taskStats.pending}
+          description="Tasks waiting to start"
+        />
+        <StatCard
+          title="In Progress"
+          count={taskStats.inProgress}
+          description="Currently active tasks"
+        />
+        <StatCard
+          title="Completed"
+          count={taskStats.completed}
+          description="Finished tasks"
+        />
+      </div>
+    </main>
   );
 }
