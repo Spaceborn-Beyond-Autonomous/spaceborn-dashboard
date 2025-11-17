@@ -1,7 +1,7 @@
 'use client';
 
-import { useContext } from 'react';
-import { usePathname } from 'next/navigation';
+import { useContext, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { AuthContext } from '@/context/AuthContext';
@@ -12,7 +12,14 @@ export default function ProtectedLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, role, loading } = useContext(AuthContext);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [loading, user, router]);
 
     if (loading) {
         return <div>Loading...</div>;

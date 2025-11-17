@@ -29,8 +29,13 @@ export default function TeamsPage() {
         setTeams(teamsData);
         setUsers(usersData);
       } catch (error) {
-        console.error('Failed to fetch data:', error);
-        router.push('/login');
+        console.error('Failed to fetch data for teams page:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+        // Don't redirect to login here - let the layout handle it
       }
     };
 
