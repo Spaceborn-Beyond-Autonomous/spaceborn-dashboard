@@ -1,13 +1,7 @@
 'use client';
 
+import { User } from '@/lib/types/users';
 import { Bell } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'core' | 'employee';
-}
 
 interface HeaderProps {
   title: string;
@@ -28,11 +22,11 @@ const Header = ({ title, user }: HeaderProps) => {
             <Bell className="h-5 w-5 text-[#aaa]" />
           </button>
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-white">{user.name}</p>
+            <p className="text-sm font-medium text-white">{user.username}</p>
             <p className="text-xs text-[#aaa] uppercase tracking-wide">{user.role}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center font-semibold text-sm">
-            {getInitials(user.name)}
+            {getInitials(user.username)}
           </div>
         </div>
       </div>

@@ -16,17 +16,12 @@ import {
   Presentation
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'core' | 'employee';
-}
+import { User } from '@/lib/types/users';
 
 interface SidebarProps {
   user: User;
 }
+
 
 const Sidebar = ({ user }: SidebarProps) => {
   const pathname = usePathname();
@@ -93,10 +88,10 @@ const Sidebar = ({ user }: SidebarProps) => {
           <div className="mb-6 pb-4 border-b border-[#222]">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black text-xs font-semibold">
-                {user.name.split(' ').map(n => n[0]).join('')}
+                {user.username.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <p className="text-sm font-medium text-white">{user.name}</p>
+                <p className="text-sm font-medium text-white">{user.username}</p>
                 <p className="text-xs text-[#aaa] uppercase">{user.role}</p>
               </div>
             </div>

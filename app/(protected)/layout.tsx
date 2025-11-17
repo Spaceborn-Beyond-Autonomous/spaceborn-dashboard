@@ -24,7 +24,7 @@ export default function ProtectedLayout({
 
     const userObj = {
         id: user.id.toString(),
-        name: user.name,
+        username: user.username,
         email: user.email,
         role: role as 'admin' | 'core' | 'employee',
     };

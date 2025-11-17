@@ -3,8 +3,8 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { getAccessToken, clearTokens } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/api/users";
+import { User } from "@/lib/types/users";
 
-type User = { id: number; name: string; email: string; role: string };
 
 export const AuthContext = createContext({
   user: null as User | null,
