@@ -38,8 +38,17 @@ export async function api(path: string, options: any = {}) {
         throw new Error('Authentication failed - please log in again');
     }
 
+    if (res.status === 404) {
+        throw new Error('Resource not found');
+    }
+
     if (!res.ok) {
         throw new Error(`API Error: ${res.status}`);
+    }
+
+    // If status code 204 (No Content), do not parse JSON
+    if (res.status === 204) {
+        return;  // Return undefined/void
     }
 
     return res.json();

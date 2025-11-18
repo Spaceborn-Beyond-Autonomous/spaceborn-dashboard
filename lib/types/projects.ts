@@ -2,20 +2,61 @@ import { Meeting } from "./meetings";
 import { Revenue } from "./revenue";
 import { Task } from "./tasks";
 import { Team } from "./teams";
-import { User } from "./users";
+
+export type ProjectStatus = 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Project {
     id: number;
     name: string;
     description?: string | null;
-    team_id?: number | null;
-    owner_id?: number | null;
-    created_at: string;  // ISO date string
-    updated_at: string;  // ISO date string
 
-    team?: Team;              // populated if included in backend response
-    owner?: User;             // populated if included
-    tasks?: Task[];           // populated if included
-    revenues?: Revenue[];     // populated if included
-    meetings?: Meeting[];     // populated if included
+    // Status & Progress
+    status: ProjectStatus;
+    priority: ProjectPriority;
+    progress: number;
+
+    // Timeline
+    start_date?: string | null;
+    due_date?: string | null;
+    completed_at?: string | null;
+
+    // Financial
+    budget?: number | null;
+    spent: number;
+    budget_remaining?: number | null;
+
+    // Organization
+    team_id?: number | null;
+
+    // Metadata
+    is_archived: boolean;
+    tags?: string[];
+
+    // Timestamps
+    created_at: string;
+    updated_at: string;
+
+    // Computed
+    days_until_due?: number | null;
+    is_overdue: boolean;
+
+    // Relations
+    team?: Team;
+    tasks?: Task[];
+    revenues?: Revenue[];
+    meetings?: Meeting[];
+}
+
+export interface ProjectFormData {
+    name: string;
+    description?: string;
+    status?: ProjectStatus;
+    priority?: ProjectPriority;
+    progress?: number;
+    start_date?: string;
+    due_date?: string;
+    budget?: number;
+    team_id?: number;
+    tags?: string[];
 }
