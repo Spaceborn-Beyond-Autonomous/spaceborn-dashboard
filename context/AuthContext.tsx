@@ -5,13 +5,13 @@ import { getAccessToken, clearTokens } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/api/users";
 import { User } from "@/lib/types/users";
 
-
 export const AuthContext = createContext({
   user: null as User | null,
   role: "",
   loading: true,
+  refreshing: false,  // New state
   logout: () => { },
-  refreshAuth: () => { },
+  refreshAuth: async () => { },
 });
 
 export const useAuth = () => {
@@ -26,26 +26,39 @@ export function AuthProvider({ children }: any) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const fetchUser = async () => {
     const token = getAccessToken();
     console.log("AuthProvider: Retrieved token:", token);
+
     if (!token) {
+      setUser(null);
+      setRole("");
       setLoading(false);
-      return;
+      return false;
     }
 
-    getCurrentUser().then((data) => {
+    try {
+      const data = await getCurrentUser();
       setUser(data ?? null);
-      setRole(data.role ?? "");
+      setRole(data?.role ?? "");
       setLoading(false);
-    }).catch(() => {
-      // If dashboard fetch fails, clear tokens and set loading to false
+      return true;
+    } catch (error) {
+      console.error("Failed to fetch user:", error);
       clearTokens();
+      setUser(null);
+      setRole("");
       setLoading(false);
-    });
-  }, [refreshTrigger]);
+      return false;
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   function logout() {
     clearTokens();
@@ -53,12 +66,18 @@ export function AuthProvider({ children }: any) {
     setRole("");
   }
 
-  function refreshAuth() {
-    setRefreshTrigger(prev => prev + 1);
+  async function refreshAuth() {
+    console.log("AuthProvider: Refreshing auth");
+    setRefreshing(true);
+    try {
+      await fetchUser();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, logout, refreshAuth }}>
+    <AuthContext.Provider value={{ user, role, loading, refreshing, logout, refreshAuth }}>
       {children}
     </AuthContext.Provider>
   );
