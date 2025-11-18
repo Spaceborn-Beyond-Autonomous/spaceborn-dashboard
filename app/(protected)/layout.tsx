@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { AuthContext } from '@/context/AuthContext';
 import { User } from '@/lib/types/users';
+import { Toaster } from 'sonner';
 
 export default function ProtectedLayout({
     children,
@@ -56,6 +57,7 @@ export default function ProtectedLayout({
                 <Header title={getTitle(pathname)} user={userObj} />
                 <main className="p-6">
                     {children}
+                    <Toaster position="top-right" theme="dark" />
                 </main>
             </div>
         </div>

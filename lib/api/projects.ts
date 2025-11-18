@@ -1,16 +1,6 @@
 import { api } from '../apiBase';
+import { Project } from '../types/projects';
 
-export interface Project {
-    id: string;
-    name: string;
-    description: string;
-    status: 'planning' | 'in_progress' | 'completed' | 'on_hold';
-    startDate: string;
-    endDate?: string;
-    teamId: string;
-    budget?: number;
-    progress: number;
-}
 
 export async function getProjects(): Promise<Project[]> {
     return api('projects/');
@@ -27,14 +17,14 @@ export async function createProject(data: Partial<Project>): Promise<Project> {
     });
 }
 
-export async function updateProject(id: string, data: Partial<Project>): Promise<Project> {
+export async function updateProject(id: number, data: Partial<Project>): Promise<Project> {
     return api(`projects/${id}/`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(data),
     });
 }
 
-export async function deleteProject(id: string): Promise<void> {
+export async function deleteProject(id: number): Promise<void> {
     return api(`projects/${id}/`, {
         method: 'DELETE',
     });
