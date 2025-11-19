@@ -17,7 +17,7 @@ export function createTeam(body: any) {
 
 export function updateTeam(id: number, body: any) {
     return api(`teams/${id}/`, {
-        method: "PUT",
+        method: "PATCH",
         body: JSON.stringify(body),
     });
 }
