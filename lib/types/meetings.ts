@@ -1,34 +1,42 @@
 export interface Meeting {
     id: number;
     title: string;
-    description?: string;
+    agenda?: string;
     date: string;
-    start_time: string;
-    end_time?: string;
-    location?: string;
-    project_id: number;
+    scheduled_at: string;
+    attendees: number[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval: number;
+    notes?: string;
     created_at?: string;
     updated_at?: string;
 }
 
 export interface MeetingCreate {
     title: string;
-    description?: string;
+    agenda?: string;
     date: string;
     start_time: string;
-    end_time?: string;
-    location?: string;
-    project_id: number;
+    end_time: string;
+    attendees: number[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval: number;
+    notes?: string;
 }
 
 export interface MeetingUpdate {
     title?: string;
-    description?: string;
+    agenda?: string;
     date?: string;
     start_time?: string;
     end_time?: string;
-    location?: string;
-    project_id?: number;
+    attendees?: number[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval?: number;
+    notes?: string;
 }
 
 export interface MeetingAttendanceCreate {
