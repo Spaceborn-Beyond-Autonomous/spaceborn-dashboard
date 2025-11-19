@@ -7,9 +7,9 @@ import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectModal } from '@/components/projects/ProjectModal';
 import { ProjectsEmptyState } from '@/components/projects/EmptyState';
 import { toast } from 'sonner';
-import { LoadingState } from './projects/LoadingState';
-import { ErrorState } from './projects/ErrorState';
-import { Header } from './projects/Header';
+import { LoadingState } from '@/components/projects/LoadingState';
+import { ErrorState } from '@/components/projects/ErrorState';
+import { Header } from './Header';
 
 export default function ProjectsClient() {
     const {

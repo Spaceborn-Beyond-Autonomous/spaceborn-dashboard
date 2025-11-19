@@ -10,7 +10,8 @@ import { Team } from '@/lib/types/teams';
 import TeamCard from './TeamCard';
 import TeamCardSkeleton from './TeamCardSkeleton';
 import EmptyTeamsState from './EmptyTeamsState';
-import { AlertCircle } from 'lucide-react';
+import CreateTeamModal from './CreateTeamModal';
+import { AlertCircle, Plus } from 'lucide-react';
 
 type LoadingState = 'idle' | 'loading' | 'refreshing' | 'error';
 
@@ -20,6 +21,7 @@ export default function TeamsGrid() {
     const [users, setUsers] = useState<User[]>([]);
     const [loadingState, setLoadingState] = useState<LoadingState>('loading');
     const [error, setError] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const router = useRouter();
 
     const fetchInitialData = useCallback(async () => {
@@ -89,6 +91,11 @@ export default function TeamsGrid() {
         return () => clearInterval(interval);
     }, [fetchData, user, loadingState]);
 
+    const handleTeamCreated = () => {
+        setIsModalOpen(false);
+        fetchData(); // Refresh teams list
+    };
+
     // Loading state
     if (loadingState === 'loading') {
         return (
@@ -126,11 +133,38 @@ export default function TeamsGrid() {
 
     // Empty state
     if (teams.length === 0) {
-        return <EmptyTeamsState />;
+        return (
+            <>
+                <EmptyTeamsState onAddTeam={() => setIsModalOpen(true)} />
+                <CreateTeamModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={handleTeamCreated}
+                    users={users}
+                />
+            </>
+        );
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
+            {/* Header with Add Team Button */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Teams</h1>
+                    <p className="text-sm text-[#aaa] mt-1">
+                        {teams.length} team{teams.length !== 1 ? 's' : ''} total
+                    </p>
+                </div>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors font-medium"
+                >
+                    <Plus className="h-5 w-5" />
+                    <span>Add Team</span>
+                </button>
+            </div>
+
             {/* Refresh indicator */}
             {loadingState === 'refreshing' && (
                 <div className="flex items-center justify-center gap-2 text-sm text-[#aaa] py-2">
@@ -139,11 +173,20 @@ export default function TeamsGrid() {
                 </div>
             )}
 
+            {/* Teams Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {teams.map((team) => (
                     <TeamCard key={team.id} team={team} users={users} />
                 ))}
             </div>
+
+            {/* Create Team Modal */}
+            <CreateTeamModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={handleTeamCreated}
+                users={users}
+            />
         </div>
     );
 }
