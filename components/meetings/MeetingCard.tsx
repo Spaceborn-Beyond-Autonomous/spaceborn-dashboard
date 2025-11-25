@@ -17,7 +17,19 @@ export default function MeetingCard({
     onAttendance,
 }: MeetingCardProps) {
     const formatDateTime = (isoString: string) => {
-        return new Date(isoString).toLocaleString('en-US', {
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffInHours = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+        // Show relative time if within 24 hours
+        if (diffInHours > 0 && diffInHours < 24) {
+            const hours = Math.floor(diffInHours);
+            const minutes = Math.floor((diffInHours - hours) * 60);
+            return `In ${hours}h ${minutes}m`;
+        }
+
+        // Otherwise show full date/time
+        return date.toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -26,6 +38,7 @@ export default function MeetingCard({
             hour12: true
         });
     };
+
 
     const getReminderText = (minutes: number) => {
         if (minutes === 0) return 'No reminder';
