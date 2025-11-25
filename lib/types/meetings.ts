@@ -1,34 +1,47 @@
+import { User } from "./users";
+
+export interface Attendances {
+    id: number;
+    attended: boolean;
+    joined_at?: string;
+    user: User;  // Nested user object
+}
+
+
 export interface Meeting {
     id: number;
     title: string;
-    description?: string;
-    date: string;
-    start_time: string;
-    end_time?: string;
-    location?: string;
-    project_id: number;
+    agenda?: string;
+    scheduled_at: string;
+    attendances: Attendances[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval: number;
+    notes?: string;
     created_at?: string;
     updated_at?: string;
 }
 
 export interface MeetingCreate {
     title: string;
-    description?: string;
-    date: string;
-    start_time: string;
-    end_time?: string;
-    location?: string;
-    project_id: number;
+    agenda?: string;
+    scheduled_at: string;
+    attendees: number[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval: number;
+    notes?: string;
 }
 
 export interface MeetingUpdate {
     title?: string;
-    description?: string;
-    date?: string;
-    start_time?: string;
-    end_time?: string;
-    location?: string;
-    project_id?: number;
+    agenda?: string;
+    scheduled_at?: string;
+    attendees?: number[];
+    meeting_link?: string;
+    organizer?: string;
+    reminder_interval?: number;
+    notes?: string;
 }
 
 export interface MeetingAttendanceCreate {
