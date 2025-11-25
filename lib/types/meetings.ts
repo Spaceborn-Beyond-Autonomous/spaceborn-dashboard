@@ -1,10 +1,19 @@
+import { User } from "./users";
+
+export interface Attendances {
+    id: number;
+    attended: boolean;
+    joined_at?: string;
+    user: User;  // Nested user object
+}
+
+
 export interface Meeting {
     id: number;
     title: string;
     agenda?: string;
-    date: string;
     scheduled_at: string;
-    attendees: number[];
+    attendances: Attendances[];
     meeting_link?: string;
     organizer?: string;
     reminder_interval: number;
@@ -16,9 +25,7 @@ export interface Meeting {
 export interface MeetingCreate {
     title: string;
     agenda?: string;
-    date: string;
-    start_time: string;
-    end_time: string;
+    scheduled_at: string;
     attendees: number[];
     meeting_link?: string;
     organizer?: string;
@@ -29,9 +36,7 @@ export interface MeetingCreate {
 export interface MeetingUpdate {
     title?: string;
     agenda?: string;
-    date?: string;
-    start_time?: string;
-    end_time?: string;
+    scheduled_at?: string;
     attendees?: number[];
     meeting_link?: string;
     organizer?: string;

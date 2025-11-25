@@ -1,9 +1,8 @@
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import type { Meeting, MeetingCreate, MeetingUpdate } from '@/lib/types/meetings';
 import { User } from '@/lib/types/users';
-
 
 interface MeetingModalProps {
     meeting: Meeting | null;
@@ -15,16 +14,17 @@ interface MeetingModalProps {
 interface FormData {
     title: string;
     agenda: string;
-    date: string;          // ISO date string yyyy-mm-dd
-    scheduled_at: string;  // time string HH:mm
-    attendees: number[];   // array of user IDs
+    date: string;
+    scheduled_at: string;
+    attendees: number[];
     meeting_link: string;
     organizer: string;
-    reminder_interval: string; // keep as string for select input
+    reminder_interval: string;
     notes: string;
 }
 
 export default function MeetingModal({ meeting, onClose, onSave, allUsers }: MeetingModalProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState<FormData>({
         title: '',
         agenda: '',
@@ -39,12 +39,16 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
 
     useEffect(() => {
         if (meeting) {
+            const scheduledDate = new Date(meeting.scheduled_at);
+            const dateStr = scheduledDate.toISOString().split('T')[0];
+            const timeStr = scheduledDate.toTimeString().slice(0, 5);
+
             setFormData({
                 title: meeting.title || '',
                 agenda: meeting.agenda || '',
-                date: meeting.date || '',
-                scheduled_at: meeting.scheduled_at || '',
-                attendees: meeting.attendees || [],
+                date: dateStr,
+                scheduled_at: timeStr,
+                attendees: meeting.attendances.map(a => a.user.id),
                 meeting_link: meeting.meeting_link || '',
                 organizer: meeting.organizer || '',
                 reminder_interval: meeting.reminder_interval.toString(),
@@ -72,16 +76,95 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const submitData: MeetingCreate | MeetingUpdate = {
-            ...formData,
-            reminder_interval: parseInt(formData.reminder_interval, 10)
-        };
+        if (!formData.date || !formData.scheduled_at) {
+            alert('Please select both date and time');
+            return;
+        }
 
-        const success = meeting
-            ? await onSave(submitData, meeting.id)
-            : await onSave(submitData);
+        setIsSubmitting(true);
 
-        if (success) onClose();
+        try {
+            const combinedDateTime = `${formData.date}T${formData.scheduled_at}:00`;
+            const localDate = new Date(combinedDateTime);
+
+            if (isNaN(localDate.getTime())) {
+                alert('Invalid date or time');
+                return;
+            }
+
+            const isoDateTime = localDate.toISOString();
+
+            const submitData: MeetingCreate | MeetingUpdate = {
+                title: formData.title,
+                agenda: formData.agenda || undefined,
+                scheduled_at: isoDateTime,
+                attendees: formData.attendees,
+                meeting_link: formData.meeting_link || undefined,
+                organizer: formData.organizer || undefined,
+                reminder_interval: parseInt(formData.reminder_interval, 10),
+                notes: formData.notes || undefined
+            };
+
+            const success = meeting
+                ? await onSave(submitData, meeting.id)
+                : await onSave(submitData);
+
+            if (success) onClose();
+        } catch (error) {
+            console.error('Failed to save meeting:', error);
+            alert('Failed to save meeting. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const selectStyles = {
+        control: (base: any) => ({
+            ...base,
+            backgroundColor: '#1a1a1a',
+            borderColor: '#222',
+            '&:hover': { borderColor: '#fff' },
+            minHeight: '42px'
+        }),
+        menu: (base: any) => ({
+            ...base,
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #222'
+        }),
+        option: (base: any, state: any) => ({
+            ...base,
+            backgroundColor: state.isFocused ? '#222' : '#1a1a1a',
+            color: '#fff',
+            '&:active': { backgroundColor: '#333' }
+        }),
+        multiValue: (base: any) => ({
+            ...base,
+            backgroundColor: '#222'
+        }),
+        multiValueLabel: (base: any) => ({
+            ...base,
+            color: '#fff'
+        }),
+        multiValueRemove: (base: any) => ({
+            ...base,
+            color: '#aaa',
+            '&:hover': {
+                backgroundColor: '#333',
+                color: '#fff'
+            }
+        }),
+        input: (base: any) => ({
+            ...base,
+            color: '#fff'
+        }),
+        placeholder: (base: any) => ({
+            ...base,
+            color: '#555'
+        }),
+        singleValue: (base: any) => ({
+            ...base,
+            color: '#fff'
+        })
     };
 
     return (
@@ -125,7 +208,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     </div>
 
                     {/* Date and Time Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-[#aaa] mb-2">
                                 Date <span className="text-red-400">*</span>
@@ -141,7 +224,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
 
                         <div>
                             <label className="block text-sm font-medium text-[#aaa] mb-2">
-                                Scheduled Time <span className="text-red-400">*</span>
+                                Time <span className="text-red-400">*</span>
                             </label>
                             <input
                                 type="time"
@@ -177,6 +260,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                             className="react-select-container"
                             classNamePrefix="react-select"
                             placeholder="Select attendees..."
+                            styles={selectStyles}
                         />
                     </div>
 
@@ -238,14 +322,16 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     <div className="flex gap-3 pt-2">
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-all"
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {meeting ? 'Update Meeting' : 'Create Meeting'}
+                            {isSubmitting ? 'Saving...' : meeting ? 'Update Meeting' : 'Create Meeting'}
                         </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-[#222] text-white rounded-lg font-medium hover:bg-[#222] transition-all"
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-[#222] text-white rounded-lg font-medium hover:bg-[#222] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>

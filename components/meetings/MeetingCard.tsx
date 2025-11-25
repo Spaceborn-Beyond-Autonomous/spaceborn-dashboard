@@ -16,8 +16,8 @@ export default function MeetingCard({
     onDelete,
     onAttendance,
 }: MeetingCardProps) {
-    const formatDateTime = (date: string, time: string) => {
-        return new Date(`${date}T${time}`).toLocaleString('en-US', {
+    const formatDateTime = (isoString: string) => {
+        return new Date(isoString).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -66,12 +66,12 @@ export default function MeetingCard({
             <div className="space-y-2 text-xs text-[#aaa] mb-4">
                 <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3 shrink-0" />
-                    <span>{formatDateTime(meeting.date, meeting.scheduled_at)}</span>
+                    <span>{formatDateTime(meeting.scheduled_at)}</span>
                 </div>
-                {meeting.attendees.length > 0 && (
+                {meeting.attendances && meeting.attendances.length > 0 && (
                     <div className="flex items-center gap-2">
                         <Users className="h-3 w-3 shrink-0" />
-                        <span>{meeting.attendees.length} attendee{meeting.attendees.length !== 1 ? 's' : ''}</span>
+                        <span>{meeting.attendances.length} attendee{meeting.attendances.length !== 1 ? 's' : ''}</span>
                     </div>
                 )}
                 {meeting.meeting_link && (
