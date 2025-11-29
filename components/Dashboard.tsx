@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CheckCircle2, FolderKanban, Clock, Users, DollarSign, Activity, ArrowRight, LayoutDashboard } from "lucide-react";
 import { getDashboard } from "@/lib/api/dashboard";
 import { getCurrentUser } from "@/lib/api/users";
 import { DashboardResponse, AdminDashboard, CoreDashboard, EmployeeDashboard } from "@/lib/types/dashboard";
 import { User } from "@/lib/types/users";
+import { cn } from "@/lib/utils";
 
 // --- UI Sub-Components ---
 
@@ -38,15 +40,36 @@ const StatCard = ({ item }: { item: any }) => (
 );
 
 // 2. List Section: Generic list component for Tasks and Projects
-const ListSection = ({ title, items, emptyText = "No data available" }: { title: string; items: any[]; emptyText?: string }) => (
+const ListSection = ({
+    title,
+    items,
+    emptyText = "No data available",
+    viewAllHref
+}: {
+    title: string;
+    items: any[];
+    emptyText?: string;
+    viewAllHref: string;
+}) => (
     <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm overflow-hidden h-full">
         <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
-            <button className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
-                View All <ArrowRight className="h-3 w-3" />
-            </button>
+            <Link
+                href={viewAllHref}
+                className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 group"
+            >
+                View All <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </Link>
         </div>
-        <div className="flex-1 p-2 space-y-1 overflow-y-auto max-h-[350px] scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+        <div className={cn(
+            "flex-1 p-2 space-y-1 overflow-y-auto max-h-[350px]",
+            // Modern Slim Scrollbar
+            "[&::-webkit-scrollbar]:w-1.5",
+            "[&::-webkit-scrollbar-track]:bg-transparent",
+            "[&::-webkit-scrollbar-thumb]:bg-zinc-800",
+            "[&::-webkit-scrollbar-thumb]:rounded-full",
+            "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700"
+        )}>
             {items.length > 0 ? (
                 items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group">
@@ -131,6 +154,10 @@ export default function Dashboard() {
     let listOneTitle = "Tasks";
     let listTwoTitle = "Projects";
 
+    // Default links
+    let listOneLink = "/tasks";
+    let listTwoLink = "/projects";
+
     if (userData.role === "admin") {
         const d = data.dashboard as AdminDashboard;
 
@@ -154,6 +181,8 @@ export default function Dashboard() {
             { id: 'proj', label: 'Projects Database', subLabel: `${d.total_projects} total records`, status: 'active' },
             { id: 'users', label: 'User Database', subLabel: `${d.total_users} registered accounts`, status: 'active' },
         ];
+
+        listTwoLink = "/admin"; // Direct admins to User Management
 
     } else if (userData.role === "core") {
         const d = data.dashboard as CoreDashboard;
@@ -231,8 +260,8 @@ export default function Dashboard() {
 
                 {/* Lists Grid (Tasks & Projects) */}
                 <div className="grid gap-6 md:grid-cols-2 lg:h-[450px]">
-                    <ListSection title={listOneTitle} items={listOne} />
-                    <ListSection title={listTwoTitle} items={listTwo} />
+                    <ListSection title={listOneTitle} items={listOne} viewAllHref={listOneLink} />
+                    <ListSection title={listTwoTitle} items={listTwo} viewAllHref={listTwoLink} />
                 </div>
             </div>
         </main>
