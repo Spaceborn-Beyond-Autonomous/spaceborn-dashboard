@@ -1,6 +1,6 @@
-// components/projects/ProjectCard.tsx
-import { Edit, Trash2, FolderKanban, Users, Calendar, TrendingUp } from 'lucide-react';
+import { Edit, Trash2, FolderKanban, Users, Calendar, TrendingUp, AlertCircle, CheckCircle2, Clock, XCircle, PlayCircle } from 'lucide-react';
 import { Project } from '@/lib/types/projects';
+import { cn } from '@/lib/utils';
 
 interface ProjectCardProps {
     project: Project;
@@ -17,53 +17,58 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         });
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusConfig = (status: string) => {
         switch (status) {
             case 'completed':
-                return 'bg-green-500/20 text-green-400';
+                return { color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 };
             case 'in_progress':
-                return 'bg-blue-500/20 text-blue-400';
+                return { color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', icon: PlayCircle };
             case 'planning':
-                return 'bg-yellow-500/20 text-yellow-400';
+                return { color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock };
             case 'on_hold':
-                return 'bg-orange-500/20 text-orange-400';
+                return { color: 'bg-orange-500/10 text-orange-500 border-orange-500/20', icon: AlertCircle };
             case 'cancelled':
-                return 'bg-red-500/20 text-red-400';
+                return { color: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: XCircle };
             default:
-                return 'bg-gray-500/20 text-gray-400';
+                return { color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20', icon: FolderKanban };
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case 'critical':
-                return 'text-red-400';
+                return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
             case 'high':
-                return 'text-orange-400';
+                return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
             case 'medium':
-                return 'text-yellow-400';
+                return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
             case 'low':
-                return 'text-green-400';
+                return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
             default:
-                return 'text-gray-400';
+                return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20';
         }
     };
 
+    const statusConfig = getStatusConfig(project.status);
+    const StatusIcon = statusConfig.icon;
+
     return (
-        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
+        <div className="group relative flex flex-col justify-between p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/60 hover:border-zinc-700 transition-all duration-300 hover:shadow-xl hover:shadow-black/20">
+
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                        <FolderKanban className="h-5 w-5 text-black" />
+                <div className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50 group-hover:border-zinc-600 transition-colors">
+                        <FolderKanban className="h-6 w-6 text-zinc-300" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs px-2 py-1 rounded uppercase tracking-wide ${getStatusColor(project.status)}`}>
+                        <h3 className="text-lg font-semibold text-zinc-100 leading-tight group-hover:text-white transition-colors">{project.name}</h3>
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider border", statusConfig.color)}>
+                                <StatusIcon className="h-3 w-3" />
                                 {project.status.replace('_', ' ')}
                             </span>
-                            <span className={`text-xs font-semibold ${getPriorityColor(project.priority)}`}>
+                            <span className={cn("px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider border", getPriorityColor(project.priority))}>
                                 {project.priority}
                             </span>
                         </div>
@@ -72,76 +77,85 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             </div>
 
             {/* Description */}
-            <p className="text-sm text-[#aaa] mb-4 line-clamp-2 min-h-10">
-                {project.description || 'No description provided'}
+            <p className="text-sm text-zinc-400 mb-5 line-clamp-2 min-h-10 leading-relaxed">
+                {project.description || 'No description provided for this project.'}
             </p>
 
             {/* Progress Bar */}
-            <div className="mb-4">
-                <div className="flex justify-between text-xs text-[#aaa] mb-1">
-                    <span className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        Progress
+            <div className="mb-5 space-y-2">
+                <div className="flex justify-between text-xs font-medium">
+                    <span className="flex items-center gap-1.5 text-zinc-400">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        Completion
                     </span>
-                    <span>{project.progress}%</span>
+                    <span className={cn(
+                        project.progress === 100 ? "text-emerald-400" : "text-zinc-200"
+                    )}>{project.progress}%</span>
                 </div>
-                <div className="w-full h-2 bg-[#222] rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-white transition-all duration-300"
+                        className={cn(
+                            "h-full transition-all duration-500 ease-out rounded-full",
+                            project.progress === 100 ? "bg-emerald-500" : "bg-indigo-500"
+                        )}
                         style={{ width: `${project.progress}%` }}
-                    ></div>
+                    />
                 </div>
             </div>
 
+            {/* Team Info */}
             {project.team && (
-                <div className="mb-4 p-2 bg-[#0a0a0a] rounded border border-[#222] space-y-1">
-                    <div className="flex items-center gap-2 text-xs">
-                        <Users className="h-3 w-3 text-[#aaa]" />
-                        <span className="text-[#aaa]">Team:</span>
-                        <span className="text-white">{project.team.name}</span>
+                <div className="mb-5 p-2.5 bg-zinc-900/50 rounded-lg border border-zinc-800/50 flex items-center gap-2.5">
+                    <div className="p-1.5 bg-zinc-800 rounded-md">
+                        <Users className="h-3.5 w-3.5 text-zinc-400" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-zinc-500 uppercase font-semibold">Assigned Team</span>
+                        <span className="text-xs text-zinc-200 font-medium">{project.team.name}</span>
                     </div>
                 </div>
             )}
 
-            {/* Dates */}
-            <div className="space-y-2 text-xs text-[#aaa] mb-4 pb-4 border-b border-[#222]">
+            {/* Footer / Dates */}
+            <div className="flex-1 border-t border-zinc-800/50 pt-4 mb-4 grid grid-cols-2 gap-4">
                 {project.start_date && (
-                    <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Start
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-zinc-500 uppercase font-semibold flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Start
                         </span>
-                        <span className="text-white">{formatDate(project.start_date)}</span>
+                        <span className="text-xs text-zinc-300 font-medium pl-4">{formatDate(project.start_date)}</span>
                     </div>
                 )}
                 {project.due_date && (
-                    <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Due
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-zinc-500 uppercase font-semibold flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Due
                         </span>
-                        <span className={`${project.is_overdue ? 'text-red-400' : 'text-white'}`}>
+                        <span className={cn(
+                            "text-xs font-medium pl-4",
+                            project.is_overdue ? "text-rose-400" : "text-zinc-300"
+                        )}>
                             {formatDate(project.due_date)}
-                            {project.is_overdue && ' (Overdue)'}
+                            {project.is_overdue && ' (!)'}
                         </span>
                     </div>
                 )}
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-auto">
                 <button
                     onClick={() => onEdit(project)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#222] rounded transition-all text-white text-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-lg transition-all text-zinc-300 hover:text-white text-xs font-medium group/edit"
                 >
-                    <Edit className="h-3 w-3" />
+                    <Edit className="h-3.5 w-3.5 transition-transform group-hover/edit:scale-110" />
                     Edit
                 </button>
                 <button
                     onClick={() => onDelete(project.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-red-500/20 rounded transition-all text-white text-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30 rounded-lg transition-all text-rose-400 hover:text-rose-300 text-xs font-medium group/delete"
                 >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5 transition-transform group-hover/delete:scale-110" />
                     Delete
                 </button>
             </div>
