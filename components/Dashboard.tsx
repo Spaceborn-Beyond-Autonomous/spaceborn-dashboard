@@ -219,7 +219,6 @@ export default function Dashboard() {
 
                 {/* Header Section */}
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
                     <p className="text-zinc-500">Welcome back, <span className="text-zinc-300 font-medium">{userData.username}</span></p>
                 </div>
 
