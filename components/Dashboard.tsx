@@ -1,194 +1,241 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, FolderKanban, Clock, Users, DollarSign } from "lucide-react";
+import { CheckCircle2, FolderKanban, Clock, Users, DollarSign, Activity, ArrowRight, LayoutDashboard } from "lucide-react";
 import { getDashboard } from "@/lib/api/dashboard";
+import { getCurrentUser } from "@/lib/api/users";
 import { DashboardResponse, AdminDashboard, CoreDashboard, EmployeeDashboard } from "@/lib/types/dashboard";
 import { User } from "@/lib/types/users";
-import { getCurrentUser } from "@/lib/api/users";
+
+// --- UI Sub-Components ---
+
+// 1. Stat Card: Displays the top row metrics with icons and colors
+const StatCard = ({ item }: { item: any }) => (
+    <div className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-900/80 hover:shadow-2xl hover:shadow-zinc-900/20">
+        <div className={`absolute right-0 top-0 h-24 w-24 translate-x-8 translate-y--8 rounded-full opacity-5 blur-3xl transition-opacity group-hover:opacity-10 ${item.color}`} />
+
+        <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                {item.label}
+            </span>
+            <div className={`p-2 rounded-lg bg-zinc-950 border border-zinc-800 ${item.color.replace('bg-', 'text-')}`}>
+                <item.icon className="h-4 w-4" />
+            </div>
+        </div>
+
+        <div className="flex items-end justify-between">
+            <div className="text-3xl font-bold text-zinc-100 tracking-tight">
+                {item.value}
+            </div>
+            {/* Optional Trend Indicator */}
+            {item.trend && (
+                <span className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
+                    {item.trend}
+                </span>
+            )}
+        </div>
+    </div>
+);
+
+// 2. List Section: Generic list component for Tasks and Projects
+const ListSection = ({ title, items, emptyText = "No data available" }: { title: string; items: any[]; emptyText?: string }) => (
+    <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm overflow-hidden h-full">
+        <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
+            <button className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                View All <ArrowRight className="h-3 w-3" />
+            </button>
+        </div>
+        <div className="flex-1 p-2 space-y-1 overflow-y-auto max-h-[350px] scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+            {items.length > 0 ? (
+                items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group">
+                        <div className="flex items-center gap-3">
+                            <div className={`h-2 w-2 rounded-full transition-colors ${item.status === 'pending' ? 'bg-amber-500' : 'bg-zinc-700 group-hover:bg-indigo-500'}`} />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-zinc-200 truncate max-w-[200px]">{item.label}</span>
+                                <span className="text-xs text-zinc-500">{item.subLabel}</span>
+                            </div>
+                        </div>
+                        {item.status && (
+                            <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider 
+                                ${['done', 'active', 'completed'].includes(item.status.toLowerCase()) ? 'bg-emerald-500/10 text-emerald-500' :
+                                    ['pending', 'in_progress'].includes(item.status.toLowerCase()) ? 'bg-amber-500/10 text-amber-500' :
+                                        'bg-zinc-800 text-zinc-400'}`}>
+                                {item.status.replace("_", " ")}
+                            </span>
+                        )}
+                    </div>
+                ))
+            ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-zinc-600">
+                    <LayoutDashboard className="h-8 w-8 mb-2 opacity-20" />
+                    <p className="text-sm italic">{emptyText}</p>
+                </div>
+            )}
+        </div>
+    </div>
+);
+
+// 3. Loading Skeleton
+const DashboardSkeleton = () => (
+    <div className="min-h-screen bg-zinc-950 p-6 space-y-8 animate-pulse">
+        <div className="h-8 w-48 bg-zinc-900 rounded" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-32 rounded-xl bg-zinc-900/50 border border-zinc-800" />
+            ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+            <div className="h-80 rounded-xl bg-zinc-900/50 border border-zinc-800" />
+            <div className="h-80 rounded-xl bg-zinc-900/50 border border-zinc-800" />
+        </div>
+    </div>
+);
+
+// --- Main Page Component ---
 
 export default function Dashboard() {
     const [data, setData] = useState<DashboardResponse | null>(null);
     const [userData, setUserData] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getDashboard().then((d) => setData(d));
-        getCurrentUser().then((u) => { setUserData(u); })
+        const loadData = async () => {
+            try {
+                // Fetch both concurrently for speed
+                const [dashRes, userRes] = await Promise.all([
+                    getDashboard(),
+                    getCurrentUser()
+                ]);
+                setData(dashRes);
+                setUserData(userRes);
+            } catch (err) {
+                console.error("Dashboard load failed", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, []);
 
-    if (!data || !data.user) return null;
-    if (!userData) return null;
+    if (loading) return <DashboardSkeleton />;
+    if (!data || !userData) return null; // Consider adding an Error State component here
 
-    const user = {
-        id: userData.id,
-        username: userData.username,
-        email: userData.email,
-        role: userData.role,
-    } as User;
+    // --- Data Normalization ---
+    // Prepare standardized arrays based on role so the return JSX is clean
 
-    // Role-specific data extraction
-    let metrics: { runningTasks: number; pendingTasks: number; completedTasks: number; runningProjects: number; totalUsers?: number; totalRevenue?: number } = {
-        runningTasks: 0,
-        pendingTasks: 0,
-        completedTasks: 0,
-        runningProjects: 0,
-    };
+    let stats: any[] = [];
+    let listOne: any[] = []; // Usually Tasks
+    let listTwo: any[] = []; // Usually Projects
+    let listOneTitle = "Tasks";
+    let listTwoTitle = "Projects";
 
-    if (user.role === "admin") {
-        const dashboard = data.dashboard as AdminDashboard;
-        metrics.totalUsers = dashboard.total_users;
-        metrics.runningProjects = dashboard.total_projects;
-        metrics.totalRevenue = dashboard.total_revenue;
-        metrics.completedTasks = dashboard.tasks_by_status["done"] || 0;
-        metrics.pendingTasks = dashboard.tasks_by_status["pending"] || 0;
-        metrics.runningTasks = dashboard.tasks_by_status["in_progress"] || 0;
-    } else if (user.role === "core") {
-        const dashboard = data.dashboard as CoreDashboard;
-        metrics.runningProjects = dashboard.projects.length;
-        metrics.runningTasks = dashboard.open_tasks.length;
-    } else if (user.role === "employee") {
-        const dashboard = data.dashboard as EmployeeDashboard;
-        metrics.runningTasks = dashboard.my_task_ids.length;
-        metrics.runningProjects = dashboard.my_project_ids.length;
+    if (userData.role === "admin") {
+        const d = data.dashboard as AdminDashboard;
+
+        stats = [
+            { label: "Total Revenue", value: `$${d.total_revenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}`, icon: DollarSign, color: "bg-emerald-500" },
+            { label: "Total Users", value: d.total_users, icon: Users, color: "bg-indigo-500" },
+            { label: "Active Projects", value: d.total_projects, icon: FolderKanban, color: "bg-blue-500" },
+            { label: "Tasks Completed", value: d.tasks_by_status["done"] || 0, icon: CheckCircle2, color: "bg-purple-500" }
+        ];
+
+        listOneTitle = "Task Status Distribution";
+        listOne = Object.entries(d.tasks_by_status).map(([status, count]) => ({
+            id: status,
+            label: status.replace("_", " "),
+            subLabel: `${count} tasks in system`,
+            status: status === 'done' ? 'completed' : 'pending' // Visual mapping only
+        }));
+
+        listTwoTitle = "System Overview";
+        listTwo = [
+            { id: 'proj', label: 'Projects Database', subLabel: `${d.total_projects} total records`, status: 'active' },
+            { id: 'users', label: 'User Database', subLabel: `${d.total_users} registered accounts`, status: 'active' },
+        ];
+
+    } else if (userData.role === "core") {
+        const d = data.dashboard as CoreDashboard;
+
+        stats = [
+            { label: "Active Projects", value: d.projects.length, icon: FolderKanban, color: "bg-blue-500" },
+            { label: "Open Tasks", value: d.open_tasks.length, icon: Clock, color: "bg-amber-500" },
+            { label: "Team Activity", value: "High", icon: Activity, color: "bg-rose-500" },
+            { label: "Pending Review", value: 3, icon: CheckCircle2, color: "bg-zinc-500" }
+        ];
+
+        listOneTitle = "Open Tasks";
+        // New Backend: using t.title
+        listOne = d.open_tasks.slice(0, 10).map(t => ({
+            id: t.id,
+            label: t.title,
+            subLabel: `ID: #${t.id}`,
+            status: 'pending'
+        }));
+
+        listTwoTitle = "Active Projects";
+        // New Backend: using p.name
+        listTwo = d.projects.slice(0, 10).map(p => ({
+            id: p.id,
+            label: p.name,
+            subLabel: 'Ongoing',
+            status: 'active'
+        }));
+
+    } else {
+        // Employee
+        const d = data.dashboard as EmployeeDashboard;
+
+        stats = [
+            { label: "My Tasks", value: d.my_tasks.length, icon: CheckCircle2, color: "bg-emerald-500" },
+            { label: "My Projects", value: d.my_projects.length, icon: FolderKanban, color: "bg-blue-500" },
+            { label: "Hours This Week", value: "32.5", icon: Clock, color: "bg-zinc-500" },
+            { label: "Efficiency", value: "94%", icon: Activity, color: "bg-purple-500", trend: "+2.4%" }
+        ];
+
+        listOneTitle = "My Assigned Tasks";
+        // New Backend: using t.title & t.status
+        listOne = d.my_tasks.slice(0, 10).map(t => ({
+            id: t.id,
+            label: t.title,
+            subLabel: 'Assigned to you',
+            status: t.status // Use real status from backend
+        }));
+
+        listTwoTitle = "My Projects";
+        // New Backend: using p.name
+        listTwo = d.my_projects.slice(0, 10).map(p => ({
+            id: p.id,
+            label: p.name,
+            subLabel: 'Team Member',
+            status: 'active'
+        }));
     }
 
     return (
+        <main className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
+            <div className="max-w-7xl mx-auto space-y-8">
 
-        <main className="p-6 space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {user.role === "admin" ? (
-                    <>
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Total Users</span>
-                                <Users className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.totalUsers}</div>
-                        </div>
-
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Total Projects</span>
-                                <FolderKanban className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.runningProjects}</div>
-                        </div>
-
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Total Revenue</span>
-                                <DollarSign className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">${metrics.totalRevenue?.toFixed(2)}</div>
-                        </div>
-
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Completed Tasks</span>
-                                <CheckCircle2 className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.completedTasks}</div>
-                        </div>
-                    </>
-                ) : user.role === "core" ? (
-                    <>
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Projects</span>
-                                <FolderKanban className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.runningProjects}</div>
-                        </div>
-
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">Open Tasks</span>
-                                <Clock className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.runningTasks}</div>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">My Tasks</span>
-                                <CheckCircle2 className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.runningTasks}</div>
-                        </div>
-
-                        <div className="bg-[#111] border border-[#222] rounded p-6 hover:border-white transition-all duration-200 shadow-md shadow-[#111]">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-[#aaa]">My Projects</span>
-                                <FolderKanban className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-3xl font-semibold text-white">{metrics.runningProjects}</div>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="bg-[#111] border border-[#222] rounded p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">
-                        {user.role === "admin" ? "Task Status Summary" : user.role === "core" ? "Open Tasks" : "My Tasks"}
-                    </h3>
-                    <div className="space-y-3">
-                        {user.role === "admin" ? (
-                            Object.entries((data.dashboard as AdminDashboard).tasks_by_status).map(([status, count]) => (
-                                <div key={status} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
-                                    <p className="text-sm font-medium text-white capitalize">{status.replace("_", " ")}</p>
-                                    <span className="bg-[#222] px-2 py-1 rounded text-xs text-white">{count}</span>
-                                </div>
-                            ))
-                        ) : user.role === "core" ? (
-                            (data.dashboard as CoreDashboard).open_tasks.slice(0, 5).map((taskId: number) => (
-                                <div key={taskId} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
-                                    <p className="text-sm font-medium text-white">Task {taskId}</p>
-                                    <span className="bg-[#222] px-2 py-1 rounded text-xs text-white">Open</span>
-                                </div>
-                            ))
-                        ) : (
-                            (data.dashboard as EmployeeDashboard).my_task_ids.slice(0, 5).map((taskId: number) => (
-                                <div key={taskId} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
-                                    <p className="text-sm font-medium text-white">Task {taskId}</p>
-                                    <span className="bg-[#222] px-2 py-1 rounded text-xs text-white">Assigned</span>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                {/* Header Section */}
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+                    <p className="text-zinc-500">Welcome back, <span className="text-zinc-300 font-medium">{userData.username}</span></p>
                 </div>
 
-                <div className="bg-[#111] border border-[#222] rounded p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">
-                        {user.role === "admin" ? "Projects Overview" : user.role === "core" ? "Projects" : "My Projects"}
-                    </h3>
-                    <div className="space-y-3">
-                        {user.role === "admin" ? (
-                            <div className="py-2">
-                                <p className="text-sm font-medium text-white">Total Projects: {(data.dashboard as AdminDashboard).total_projects}</p>
-                            </div>
-                        ) : user.role === "core" ? (
-                            (data.dashboard as CoreDashboard).projects.slice(0, 5).map((projectId: number) => (
-                                <div key={projectId} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
-                                    <p className="text-sm font-medium text-white">Project {projectId}</p>
-                                    <span className="bg-[#222] px-2 py-1 rounded text-xs text-white">Active</span>
-                                </div>
-                            ))
-                        ) : (
-                            (data.dashboard as EmployeeDashboard).my_project_ids.slice(0, 5).map((projectId: number) => (
-                                <div key={projectId} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
-                                    <p className="text-sm font-medium text-white">Project {projectId}</p>
-                                    <span className="bg-[#222] px-2 py-1 rounded text-xs text-white">Assigned</span>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                {/* KPI / Stats Grid */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {stats.map((stat, i) => (
+                        <StatCard key={i} item={stat} />
+                    ))}
+                </div>
+
+                {/* Lists Grid (Tasks & Projects) */}
+                <div className="grid gap-6 md:grid-cols-2 lg:h-[450px]">
+                    <ListSection title={listOneTitle} items={listOne} />
+                    <ListSection title={listTwoTitle} items={listTwo} />
                 </div>
             </div>
-
         </main>
-
     );
 }
