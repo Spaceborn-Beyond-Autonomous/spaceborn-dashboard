@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css"; // Ensure this is imported
-import { X, Calendar, Clock, Link as LinkIcon, User as UserIcon, AlignLeft, Bell, Search, Check, Loader2, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import "react-datepicker/dist/react-datepicker.css";
+import { X, Calendar, Clock, Link as LinkIcon, User as UserIcon, AlignLeft, Bell, Search, Check, Loader2, Save, ChevronRight } from 'lucide-react';
 import { Meeting, MeetingCreate, MeetingUpdate } from '@/lib/types/meetings';
 import { User } from '@/lib/types/users';
 import { cn } from '@/lib/utils';
@@ -50,18 +50,6 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
         notes: ''
     });
 
-    // Generate 15-minute intervals for the time picker
-    const timeSlots = useMemo(() => {
-        const slots = [];
-        for (let i = 0; i < 24 * 4; i++) {
-            const hour = Math.floor(i / 4);
-            const minute = (i % 4) * 15;
-            const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            slots.push(time);
-        }
-        return slots;
-    }, []);
-
     // Close on Escape key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -88,12 +76,9 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                 notes: meeting.notes || ''
             });
         } else {
-            // Defaults
             const now = new Date();
-            // Round to next 15 min
             const minutes = Math.ceil(now.getMinutes() / 15) * 15;
             now.setMinutes(minutes);
-
             const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
             setFormData({
@@ -138,40 +123,57 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
         setIsSubmitting(true);
 
         try {
-            // Combine Date object with Time string
-            const datePart = formData.date.toISOString().split('T')[0];
-            const combinedDateTime = `${datePart}T${formData.scheduled_at}:00`;
-            const localDate = new Date(combinedDateTime);
+            if (formData.date) {
+                const datePart = formData.date.toISOString().split('T')[0];
+                const combinedDateTime = `${datePart}T${formData.scheduled_at}:00`;
+                const localDate = new Date(combinedDateTime);
 
-            if (isNaN(localDate.getTime())) {
-                toast.error('Invalid date or time');
-                return;
-            }
+                if (isNaN(localDate.getTime())) {
+                    toast.error('Invalid date or time');
+                    return;
+                }
 
-            const submitData: MeetingCreate | MeetingUpdate = {
-                title: formData.title,
-                agenda: formData.agenda || undefined,
-                scheduled_at: localDate.toISOString(),
-                attendees: formData.attendees,
-                meeting_link: formData.meeting_link || undefined,
-                organizer: formData.organizer || undefined,
-                reminder_interval: parseInt(formData.reminder_interval, 10),
-                notes: formData.notes || undefined
-            };
+                const submitData: MeetingCreate | MeetingUpdate = {
+                    title: formData.title,
+                    agenda: formData.agenda || undefined,
+                    scheduled_at: localDate.toISOString(),
+                    attendees: formData.attendees,
+                    meeting_link: formData.meeting_link || undefined,
+                    organizer: formData.organizer || undefined,
+                    reminder_interval: parseInt(formData.reminder_interval, 10),
+                    notes: formData.notes || undefined
+                };
 
-            const success = meeting
-                ? await onSave(submitData, meeting.id)
-                : await onSave(submitData);
+                const success = meeting
+                    ? await onSave(submitData, meeting.id)
+                    : await onSave(submitData);
 
-            if (success) {
-                toast.success(meeting ? 'Meeting updated' : 'Meeting scheduled');
-                onClose();
+                if (success) {
+                    toast.success(meeting ? 'Meeting updated' : 'Meeting scheduled');
+                    onClose();
+                }
             }
         } catch (error) {
             console.error('Failed to save meeting:', error);
             toast.error('Failed to save meeting');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const timeAsDate = useMemo(() => {
+        if (!formData.scheduled_at) return new Date();
+        const [hours, minutes] = formData.scheduled_at.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        return date;
+    }, [formData.scheduled_at]);
+
+    const handleTimeChange = (date: Date | null) => {
+        if (date) {
+            const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            updateField('scheduled_at', timeStr);
         }
     };
 
@@ -185,8 +187,9 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={onClose}
         >
-            {/* Custom Styles for React Datepicker to match Zinc Theme */}
+            {/* CSS Overrides for React Datepicker & Scrollbars */}
             <style jsx global>{`
+                /* --- Datepicker Core Theme --- */
                 .react-datepicker {
                     font-family: inherit;
                     background-color: #18181b; /* zinc-950 */
@@ -207,7 +210,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     margin-bottom: 0.5rem;
                 }
                 .react-datepicker__day-name {
-                    color: #a1a1aa; /* zinc-400 */
+                    color: #a1a1aa;
                 }
                 .react-datepicker__day {
                     color: #f4f4f5;
@@ -215,22 +218,63 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     margin: 0.2rem;
                 }
                 .react-datepicker__day:hover {
-                    background-color: #3f3f46; /* zinc-700 */
+                    background-color: #3f3f46;
                 }
                 .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
-                    background-color: #4f46e5 !important; /* indigo-600 */
+                    background-color: #4f46e5 !important;
                     color: white;
                 }
                 .react-datepicker__day--today {
                     font-weight: bold;
-                    color: #818cf8; /* indigo-400 */
+                    color: #818cf8;
                 }
-                .react-datepicker__day--outside-month {
-                    color: #52525b; /* zinc-600 */
+
+                /* --- Enlarged & Modernized Time Picker --- */
+                .react-datepicker__time-container {
+                    border-left: 1px solid #3f3f46;
+                    width: 8rem !important; /* Increased width */
                 }
-                .react-datepicker-popper[data-placement^="bottom"] .react-datepicker__triangle::before,
-                .react-datepicker-popper[data-placement^="bottom"] .react-datepicker__triangle::after {
-                    border-bottom-color: #27272a;
+                .react-datepicker__time-container .react-datepicker__time {
+                    background-color: #18181b;
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
+                    width: 100% !important;
+                }
+                /* Time List Items */
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+                    color: #f4f4f5;
+                    height: auto;
+                    padding: 12px 0; /* Larger vertical padding for touch/click area */
+                    font-size: 0.95rem; /* Larger font */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 4px; /* Slight margin for hover effect roundedness */
+                    border-radius: 6px;
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+                    background-color: #27272a; /* Slightly lighter zinc for hover */
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+                    background-color: #4f46e5 !important;
+                    font-weight: 600;
+                }
+
+                /* --- Modern Scrollbar Styling (Webkit) --- */
+                
+                /* 1. Datepicker Time List Scrollbar */
+                .react-datepicker__time-list::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-thumb {
+                    background-color: #3f3f46; /* zinc-700 */
+                    border-radius: 10px;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-thumb:hover {
+                    background-color: #52525b; /* zinc-600 */
                 }
             `}</style>
 
@@ -259,16 +303,19 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     </button>
                 </div>
 
-                {/* Form */}
+                {/* Form - Applied Custom Scrollbar via Tailwind Utils and CSS logic */}
                 <form
                     onSubmit={handleSubmit}
                     className={cn(
-                        "p-6 space-y-6 overflow-y-auto",
+                        "p-6 space-y-6 overflow-y-auto custom-scrollbar",
+                        // Tailwind Scrollbar Utilities for Modern Look
                         "[&::-webkit-scrollbar]:w-2",
-                        "[&::-webkit-scrollbar-track]:bg-zinc-900/50",
-                        "[&::-webkit-scrollbar-thumb]:bg-zinc-700",
+                        "[&::-webkit-scrollbar-track]:bg-transparent",
+                        "[&::-webkit-scrollbar-thumb]:bg-zinc-800",
                         "[&::-webkit-scrollbar-thumb]:rounded-full",
-                        "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600"
+                        "[&::-webkit-scrollbar-thumb]:border-2",
+                        "[&::-webkit-scrollbar-thumb]:border-zinc-950", // Creates 'floating' thumb effect
+                        "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700"
                     )}
                 >
                     {/* Title */}
@@ -287,7 +334,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                     {/* Date & Time Grid */}
                     <div className="grid grid-cols-2 gap-4">
 
-                        {/* Improved Date Picker with React-Datepicker */}
+                        {/* Date Picker */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
                                 <Calendar className="h-3 w-3" /> Date
@@ -309,26 +356,28 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                             </div>
                         </div>
 
-                        {/* Improved Time Picker with Scrollable Select */}
+                        {/* Time Picker */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
                                 <Clock className="h-3 w-3" /> Time
                             </label>
-                            <Select
-                                value={formData.scheduled_at}
-                                onValueChange={(val) => updateField('scheduled_at', val)}
-                            >
-                                <SelectTrigger className="w-full bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-indigo-500/20 focus:border-indigo-500/50">
-                                    <SelectValue placeholder="Select time" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-100 h-60">
-                                    {timeSlots.map((time) => (
-                                        <SelectItem key={time} value={time} className="focus:bg-zinc-900 focus:text-zinc-100 cursor-pointer">
-                                            {time}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="relative w-full">
+                                <DatePicker
+                                    selected={timeAsDate}
+                                    onChange={handleTimeChange}
+                                    showTimeSelect
+                                    showTimeSelectOnly
+                                    timeIntervals={15}
+                                    timeCaption="Time"
+                                    dateFormat="h:mm aa"
+                                    className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all cursor-pointer"
+                                    wrapperClassName="w-full"
+                                    showPopperArrow={false}
+                                />
+                                <div className="absolute right-3 top-2.5 pointer-events-none text-zinc-500">
+                                    <ChevronRight className="h-4 w-4 rotate-90" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -340,7 +389,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                         <textarea
                             value={formData.agenda}
                             onChange={e => updateField('agenda', e.target.value)}
-                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all resize-none min-h-[80px]"
+                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all resize-none min-h-20"
                             placeholder="Briefly describe the meeting agenda..."
                         />
                     </div>
@@ -367,10 +416,12 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                             </div>
                             <div className={cn(
                                 "max-h-48 overflow-y-auto p-1 space-y-0.5",
+                                // Updated modern scrollbar for attendees list
                                 "[&::-webkit-scrollbar]:w-1.5",
-                                "[&::-webkit-scrollbar-track]:bg-zinc-900/30",
+                                "[&::-webkit-scrollbar-track]:bg-transparent",
                                 "[&::-webkit-scrollbar-thumb]:bg-zinc-700",
-                                "[&::-webkit-scrollbar-thumb]:rounded-full"
+                                "[&::-webkit-scrollbar-thumb]:rounded-full",
+                                "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600"
                             )}>
                                 {filteredUsers.map(user => {
                                     const isSelected = formData.attendees.includes(user.id);
@@ -431,7 +482,7 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
                         </div>
                     </div>
 
-                    {/* Reminder - Replaced with Custom Select */}
+                    {/* Reminder */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
                             <Bell className="h-3 w-3" /> Reminder
