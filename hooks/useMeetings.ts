@@ -48,7 +48,6 @@ export const useMeetings = () => {
     };
 
     const removeMeeting = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this meeting?')) return false;
 
         try {
             await deleteMeeting(id);
