@@ -1,5 +1,5 @@
-// components/projects/EmptyState.tsx
 import { FolderKanban, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProjectsEmptyStateProps {
     onCreate: () => void;
@@ -7,26 +7,36 @@ interface ProjectsEmptyStateProps {
 
 export function ProjectsEmptyState({ onCreate }: ProjectsEmptyStateProps) {
     return (
-        <div className="flex items-center justify-center min-h-[500px]">
-            <div className="text-center max-w-md">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-                    <FolderKanban className="h-12 w-12 text-[#444]" />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 animate-in fade-in duration-500">
+
+            {/* Visual Icon with Glow */}
+            <div className="relative mb-8 group">
+                <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="relative w-24 h-24 rounded-3xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shadow-2xl rotate-3 transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105 group-hover:border-zinc-700">
+                    <FolderKanban className="h-10 w-10 text-zinc-500 group-hover:text-indigo-400 transition-colors duration-300" />
                 </div>
-                <h3 className="text-2xl font-semibold text-white mb-3">
-                    No Projects Yet
-                </h3>
-                <p className="text-[#aaa] mb-8 leading-relaxed">
-                    Get started by creating your first project. Track progress, manage
-                    budgets, and collaborate with your team.
-                </p>
-                <button
-                    onClick={onCreate}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded hover:bg-gray-200 transition-all font-medium"
-                >
-                    <Plus className="h-5 w-5" />
-                    Create Your First Project
-                </button>
             </div>
+
+            {/* Text Content */}
+            <div className="max-w-md text-center space-y-3 mb-8">
+                <h3 className="text-xl font-bold text-zinc-100 tracking-tight">
+                    No Projects Found
+                </h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                    Your workspace is currently empty. Start by creating a new project to track progress, manage budgets, and collaborate with your team.
+                </p>
+            </div>
+
+            {/* CTA Button */}
+            <button
+                onClick={onCreate}
+                className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-0.5"
+            >
+                <div className="bg-indigo-500/50 rounded-md p-0.5 group-hover:bg-indigo-400/50 transition-colors">
+                    <Plus className="h-4 w-4" />
+                </div>
+                Create Your First Project
+            </button>
         </div>
     );
 }

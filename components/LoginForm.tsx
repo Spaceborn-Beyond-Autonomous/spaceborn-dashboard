@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2, Orbit, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/field';
 import { login } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils'; // Assuming you have this, otherwise just join strings
+import Image from 'next/image';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -53,10 +55,7 @@ export default function LoginForm() {
 
         try {
             const data = await login({ email, password });
-
             if (data.access_token) {
-                // Tokens are already stored in localStorage by login function
-                // Refresh auth context to load user data
                 refreshAuth();
                 router.push('/dashboard');
             } else {
@@ -70,67 +69,74 @@ export default function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-black via-[#0a0a0a] to-[#111] relative overflow-hidden">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-950 relative overflow-hidden selection:bg-indigo-500/30">
+
+            {/* Background Effects */}
+            <div className="absolute inset-0 z-0">
+                {/* Grid Pattern */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
+                {/* Radial Glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-600/20 rounded-[100%] blur-[100px] opacity-50 animate-pulse"></div>
             </div>
 
-            <div className="w-full max-w-md relative z-10">
-                {/* Header */}
-                <div className="text-center mb-8 space-y-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 mb-4">
-                        <LogIn className="w-8 h-8 text-white" />
+            <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+
+                {/* Header / Logo */}
+                <div className="flex flex-col items-center mb-8">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Image src="/logo.png" alt="Spaceborn Logo" width={40} height={40} />
+                        <span className="text-2xl font-bold tracking-tight text-white">Spaceborn</span>
                     </div>
-                    <h1 className="text-4xl font-bold text-white tracking-tight">Welcome Back</h1>
-                    <p className="text-sm text-white/60">Sign in to continue to your dashboard</p>
+                    <h1 className="text-xl font-medium text-zinc-200">Welcome back</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Enter your credentials to access the bridge</p>
                 </div>
 
-                {/* Glassmorphism Card */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                {/* Main Card */}
+                <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <FieldGroup>
                             {/* Email Field */}
                             <Field data-invalid={!!errors.email}>
-                                <FieldLabel htmlFor="email" className="text-white/90">
+                                <FieldLabel htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">
                                     Email Address
                                 </FieldLabel>
                                 <div className="relative group mt-2">
-                                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-white transition-colors z-10" />
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Mail className="h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                                    </div>
                                     <Input
                                         id="email"
                                         type="email"
-                                        placeholder="you@example.com"
+                                        placeholder="commander@spaceborn.io"
                                         value={email}
                                         onChange={(e) => {
                                             setEmail(e.target.value);
                                             if (errors.email) setErrors({ ...errors, email: undefined });
                                         }}
-                                        aria-invalid={!!errors.email}
                                         disabled={isLoading}
-                                        className="pl-12 bg-white/5 text-white placeholder-white/40 border-white/10 focus:ring-white/30 focus:border-transparent disabled:opacity-50"
+                                        className="pl-10 h-11 bg-zinc-950/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all hover:bg-zinc-950/80"
                                     />
                                 </div>
-                                {errors.email && <FieldError className="text-red-400 mt-1.5">{errors.email}</FieldError>}
+                                {errors.email && <FieldError className="text-rose-400 text-xs mt-1.5 ml-1">{errors.email}</FieldError>}
                             </Field>
 
                             {/* Password Field */}
                             <Field data-invalid={!!errors.password}>
                                 <div className="flex items-center justify-between">
-                                    <FieldLabel htmlFor="password" className="text-white/90">
+                                    <FieldLabel htmlFor="password" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">
                                         Password
                                     </FieldLabel>
                                     <button
                                         type="button"
-                                        className="text-xs text-white/60 hover:text-white transition-colors"
+                                        className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
                                     >
-                                        Forgot password?
+                                        Recover password?
                                     </button>
                                 </div>
                                 <div className="relative group mt-2">
-                                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-white transition-colors z-10" />
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock className="h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                                    </div>
                                     <Input
                                         id="password"
                                         type="password"
@@ -140,22 +146,19 @@ export default function LoginForm() {
                                             setPassword(e.target.value);
                                             if (errors.password) setErrors({ ...errors, password: undefined });
                                         }}
-                                        aria-invalid={!!errors.password}
                                         disabled={isLoading}
-                                        className="pl-12 bg-white/5 text-white placeholder-white/40 border-white/10 focus:ring-white/30 focus:border-transparent disabled:opacity-50"
+                                        className="pl-10 h-11 bg-zinc-950/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all hover:bg-zinc-950/80"
                                     />
                                 </div>
-                                {errors.password && <FieldError className="text-red-400 mt-1.5">{errors.password}</FieldError>}
+                                {errors.password && <FieldError className="text-rose-400 text-xs mt-1.5 ml-1">{errors.password}</FieldError>}
                             </Field>
                         </FieldGroup>
 
                         {/* General Error Message */}
                         {generalError && (
-                            <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl animate-in slide-in-from-top-2">
-                                <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                </div>
-                                <p className="text-sm text-red-400 flex-1">{generalError}</p>
+                            <div className="flex items-center gap-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg animate-in fade-in slide-in-from-top-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                <p className="text-sm text-rose-400 font-medium">{generalError}</p>
                             </div>
                         )}
 
@@ -163,29 +166,33 @@ export default function LoginForm() {
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-white hover:bg-white/90 text-black font-semibold h-12 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                            className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
                         >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                                    Signing in...
-                                </>
-                            ) : (
-                                <>
-                                    <LogIn className="h-5 w-5 mr-2" />
-                                    Sign In
-                                </>
-                            )}
+                            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                            <span className="flex items-center justify-center gap-2">
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Authenticating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Sign In
+                                        <ChevronRight className="h-4 w-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                    </>
+                                )}
+                            </span>
                         </Button>
                     </form>
                 </div>
-            </div>
 
-            {/* Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 text-center text-xs text-white/40">
-                <p>
-                    Secured by Spaceborn &copy; 2025
-                </p>
+                {/* Footer */}
+                <div className="mt-8 text-center">
+                    <p className="text-xs text-zinc-600">
+                        Restricted Access. Authorized Personnel Only. <br />
+                        Spaceborn System v2.4.0 &copy; 2025
+                    </p>
+                </div>
             </div>
         </div>
     );

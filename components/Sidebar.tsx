@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -13,34 +13,37 @@ import {
   Menu,
   X,
   UserCog,
-  Presentation
+  Presentation,
+  Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@/lib/types/users';
+import Image from 'next/image';
 
 interface SidebarProps {
   user: User;
 }
 
-
-const Sidebar = ({ user }: SidebarProps) => {
+export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
+      await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
       router.refresh();
     } catch (error) {
       console.error('Logout failed:', error);
+      setIsLoggingOut(false);
     }
   };
 
-  const getNavItems = () => {
+  // Memoize nav items to prevent recalculation on every render
+  const navItems = useMemo(() => {
     const baseItems = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/teams', label: 'Teams', icon: Users },
@@ -54,7 +57,7 @@ const Sidebar = ({ user }: SidebarProps) => {
         { href: '/projects', label: 'Projects', icon: FolderKanban },
         { href: '/revenue', label: 'Revenue', icon: DollarSign },
         ...baseItems.slice(1),
-        { href: '/admin', label: 'User Management', icon: UserCog }, // Add this
+        { href: '/admin', label: 'User Management', icon: UserCog },
       ];
     }
 
@@ -67,76 +70,111 @@ const Sidebar = ({ user }: SidebarProps) => {
     }
 
     return baseItems;
-  };
+  }, [user.role]);
 
   return (
     <>
+      {/* Mobile Toggle Button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 hover:bg-[#1a1a1a] rounded transition-all"
+        type="button"
+        aria-label="Toggle Menu"
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 bg-zinc-900 text-zinc-400 hover:text-white rounded-lg border border-zinc-800 shadow-xl transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      <div className={cn(
-        "fixed left-0 top-0 h-full w-64 bg-[#111] border-r border-[#222] transform transition-transform md:translate-x-0 z-40",
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      )}>
-        <div className="px-6 py-4">
-          <h2 className="text-xl font-semibold mb-8 text-white">Spaceborn</h2>
-
-          <div className="mb-6 pb-4 border-b border-[#222]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black text-xs font-semibold">
-                {user.username.split(' ').map(n => n[0]).join('')}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">{user.username}</p>
-                <p className="text-xs text-[#aaa] uppercase">{user.role}</p>
-              </div>
-            </div>
-          </div>
-
-          <nav className="space-y-1">
-            {getNavItems().map(item => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded transition-all duration-200 relative",
-                    isActive
-                      ? "bg-white text-black before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-white"
-                      : "text-[#aaa] hover:text-white hover:bg-[#1a1a1a]"
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </Link>
-              );
-            })}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded text-[#aaa] hover:text-white hover:bg-[#1a1a1a] transition-all duration-200 mt-4"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
-          </nav>
-        </div>
-      </div>
-
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/80 z-30"
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in duration-200"
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* Sidebar Container */}
+      <aside className={cn(
+        "fixed left-0 top-0 h-full w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col z-40 transition-transform duration-300 ease-in-out",
+        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      )}>
+
+        {/* 1. Header / Logo */}
+        <div className="h-16 flex items-center px-6 border-b border-zinc-800/50">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="p-2 bg-indigo-500/10 rounded-lg group-hover:bg-indigo-500/20 transition-colors border border-indigo-500/20">
+              <Image src="/logo.png" alt="Spaceborn Logo" width={24} height={24} className="h-6 w-6 text-indigo-400" />
+            </div>
+            <span className="text-lg font-bold tracking-tight text-zinc-100">Spaceborn</span>
+          </Link>
+        </div>
+
+        {/* 2. Navigation Area */}
+        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+          <div className="px-3 mb-2">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Platform
+            </p>
+          </div>
+
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                  isActive
+                    ? "bg-zinc-800/60 text-white shadow-sm ring-1 ring-white/5"
+                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/60"
+                )}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-indigo-500 rounded-r-full" />
+                )}
+                <Icon className={cn(
+                  "h-4 w-4 transition-colors",
+                  isActive ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300"
+                )} />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* 3. User Footer */}
+        <div className="p-4 border-t border-zinc-800 bg-zinc-900/30">
+          <div className="flex items-center justify-between gap-3 p-2 rounded-xl transition-colors hover:bg-zinc-800/50 group">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Avatar Generator */}
+              <div className="h-9 w-9 shrink-0 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-500/20 ring-2 ring-zinc-900">
+                {user.username.substring(0, 2).toUpperCase()}
+              </div>
+
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">
+                  {user.username}
+                </span>
+                <span className="text-xs text-zinc-500 capitalize truncate">
+                  {user.role}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              title="Sign Out"
+              className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition-all focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            >
+              <LogOut className={cn("h-4 w-4", isLoggingOut && "animate-pulse")} />
+            </button>
+          </div>
+        </div>
+      </aside>
     </>
   );
-};
-
-export default Sidebar;
+}

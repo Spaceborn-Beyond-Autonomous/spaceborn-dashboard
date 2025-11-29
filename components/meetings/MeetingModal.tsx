@@ -1,8 +1,20 @@
-import { X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Select from 'react-select';
-import type { Meeting, MeetingCreate, MeetingUpdate } from '@/lib/types/meetings';
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { X, Calendar, Clock, Link as LinkIcon, User as UserIcon, AlignLeft, Bell, Search, Check, Loader2, Save, ChevronRight } from 'lucide-react';
+import { Meeting, MeetingCreate, MeetingUpdate } from '@/lib/types/meetings';
 import { User } from '@/lib/types/users';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface MeetingModalProps {
     meeting: Meeting | null;
@@ -14,7 +26,7 @@ interface MeetingModalProps {
 interface FormData {
     title: string;
     agenda: string;
-    date: string;
+    date: Date | null;
     scheduled_at: string;
     attendees: number[];
     meeting_link: string;
@@ -25,11 +37,12 @@ interface FormData {
 
 export default function MeetingModal({ meeting, onClose, onSave, allUsers }: MeetingModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState<FormData>({
         title: '',
         agenda: '',
-        date: '',
-        scheduled_at: '',
+        date: new Date(),
+        scheduled_at: '09:00',
         attendees: [],
         meeting_link: '',
         organizer: '',
@@ -37,29 +50,42 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
         notes: ''
     });
 
+    // Close on Escape key
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     useEffect(() => {
         if (meeting) {
             const scheduledDate = new Date(meeting.scheduled_at);
-            const dateStr = scheduledDate.toISOString().split('T')[0];
             const timeStr = scheduledDate.toTimeString().slice(0, 5);
 
             setFormData({
                 title: meeting.title || '',
                 agenda: meeting.agenda || '',
-                date: dateStr,
+                date: scheduledDate,
                 scheduled_at: timeStr,
-                attendees: meeting.attendances.map(a => a.user.id),
+                attendees: meeting.attendances?.map(a => a.user.id) || [],
                 meeting_link: meeting.meeting_link || '',
                 organizer: meeting.organizer || '',
-                reminder_interval: meeting.reminder_interval.toString(),
+                reminder_interval: meeting.reminder_interval?.toString() || '15',
                 notes: meeting.notes || ''
             });
         } else {
+            const now = new Date();
+            const minutes = Math.ceil(now.getMinutes() / 15) * 15;
+            now.setMinutes(minutes);
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
             setFormData({
                 title: '',
                 agenda: '',
-                date: '',
-                scheduled_at: '',
+                date: now,
+                scheduled_at: timeStr,
                 attendees: [],
                 meeting_link: '',
                 organizer: '',
@@ -73,267 +99,438 @@ export default function MeetingModal({ meeting, onClose, onSave, allUsers }: Mee
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const toggleAttendee = (userId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            attendees: prev.attendees.includes(userId)
+                ? prev.attendees.filter(id => id !== userId)
+                : [...prev.attendees, userId]
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!formData.title.trim()) {
+            toast.error('Title is required');
+            return;
+        }
         if (!formData.date || !formData.scheduled_at) {
-            alert('Please select both date and time');
+            toast.error('Date and time are required');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            const combinedDateTime = `${formData.date}T${formData.scheduled_at}:00`;
-            const localDate = new Date(combinedDateTime);
+            if (formData.date) {
+                const datePart = formData.date.toISOString().split('T')[0];
+                const combinedDateTime = `${datePart}T${formData.scheduled_at}:00`;
+                const localDate = new Date(combinedDateTime);
 
-            if (isNaN(localDate.getTime())) {
-                alert('Invalid date or time');
-                return;
+                if (isNaN(localDate.getTime())) {
+                    toast.error('Invalid date or time');
+                    return;
+                }
+
+                const submitData: MeetingCreate | MeetingUpdate = {
+                    title: formData.title,
+                    agenda: formData.agenda || undefined,
+                    scheduled_at: localDate.toISOString(),
+                    attendees: formData.attendees,
+                    meeting_link: formData.meeting_link || undefined,
+                    organizer: formData.organizer || undefined,
+                    reminder_interval: parseInt(formData.reminder_interval, 10),
+                    notes: formData.notes || undefined
+                };
+
+                const success = meeting
+                    ? await onSave(submitData, meeting.id)
+                    : await onSave(submitData);
+
+                if (success) {
+                    toast.success(meeting ? 'Meeting updated' : 'Meeting scheduled');
+                    onClose();
+                }
             }
-
-            const isoDateTime = localDate.toISOString();
-
-            const submitData: MeetingCreate | MeetingUpdate = {
-                title: formData.title,
-                agenda: formData.agenda || undefined,
-                scheduled_at: isoDateTime,
-                attendees: formData.attendees,
-                meeting_link: formData.meeting_link || undefined,
-                organizer: formData.organizer || undefined,
-                reminder_interval: parseInt(formData.reminder_interval, 10),
-                notes: formData.notes || undefined
-            };
-
-            const success = meeting
-                ? await onSave(submitData, meeting.id)
-                : await onSave(submitData);
-
-            if (success) onClose();
         } catch (error) {
             console.error('Failed to save meeting:', error);
-            alert('Failed to save meeting. Please try again.');
+            toast.error('Failed to save meeting');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const selectStyles = {
-        control: (base: any) => ({
-            ...base,
-            backgroundColor: '#1a1a1a',
-            borderColor: '#222',
-            '&:hover': { borderColor: '#fff' },
-            minHeight: '42px'
-        }),
-        menu: (base: any) => ({
-            ...base,
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #222'
-        }),
-        option: (base: any, state: any) => ({
-            ...base,
-            backgroundColor: state.isFocused ? '#222' : '#1a1a1a',
-            color: '#fff',
-            '&:active': { backgroundColor: '#333' }
-        }),
-        multiValue: (base: any) => ({
-            ...base,
-            backgroundColor: '#222'
-        }),
-        multiValueLabel: (base: any) => ({
-            ...base,
-            color: '#fff'
-        }),
-        multiValueRemove: (base: any) => ({
-            ...base,
-            color: '#aaa',
-            '&:hover': {
-                backgroundColor: '#333',
-                color: '#fff'
-            }
-        }),
-        input: (base: any) => ({
-            ...base,
-            color: '#fff'
-        }),
-        placeholder: (base: any) => ({
-            ...base,
-            color: '#555'
-        }),
-        singleValue: (base: any) => ({
-            ...base,
-            color: '#fff'
-        })
+    const timeAsDate = useMemo(() => {
+        if (!formData.scheduled_at) return new Date();
+        const [hours, minutes] = formData.scheduled_at.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        return date;
+    }, [formData.scheduled_at]);
+
+    const handleTimeChange = (date: Date | null) => {
+        if (date) {
+            const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            updateField('scheduled_at', timeStr);
+        }
     };
 
+    const filteredUsers = allUsers.filter(user =>
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#111] border border-[#222] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-semibold text-white">
-                        {meeting ? 'Edit Meeting' : 'Schedule New Meeting'}
-                    </h3>
-                    <button onClick={onClose} className="hover:bg-[#222] rounded-full p-1 transition-colors">
-                        <X className="h-5 w-5 text-[#aaa] hover:text-white" />
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={onClose}
+        >
+            {/* CSS Overrides for React Datepicker & Scrollbars */}
+            <style jsx global>{`
+                /* --- Datepicker Core Theme --- */
+                .react-datepicker {
+                    font-family: inherit;
+                    background-color: #18181b; /* zinc-950 */
+                    border: 1px solid #27272a; /* zinc-800 */
+                    color: #f4f4f5;
+                    border-radius: 0.75rem;
+                    overflow: hidden;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+                }
+                .react-datepicker__header {
+                    background-color: #27272a; /* zinc-800 */
+                    border-bottom: 1px solid #3f3f46;
+                    padding-top: 1rem;
+                }
+                .react-datepicker__current-month {
+                    color: #f4f4f5;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                }
+                .react-datepicker__day-name {
+                    color: #a1a1aa;
+                }
+                .react-datepicker__day {
+                    color: #f4f4f5;
+                    border-radius: 0.375rem;
+                    margin: 0.2rem;
+                }
+                .react-datepicker__day:hover {
+                    background-color: #3f3f46;
+                }
+                .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
+                    background-color: #4f46e5 !important;
+                    color: white;
+                }
+                .react-datepicker__day--today {
+                    font-weight: bold;
+                    color: #818cf8;
+                }
+
+                /* --- Enlarged & Modernized Time Picker --- */
+                .react-datepicker__time-container {
+                    border-left: 1px solid #3f3f46;
+                    width: 8rem !important; /* Increased width */
+                }
+                .react-datepicker__time-container .react-datepicker__time {
+                    background-color: #18181b;
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
+                    width: 100% !important;
+                }
+                /* Time List Items */
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+                    color: #f4f4f5;
+                    height: auto;
+                    padding: 12px 0; /* Larger vertical padding for touch/click area */
+                    font-size: 0.95rem; /* Larger font */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 4px; /* Slight margin for hover effect roundedness */
+                    border-radius: 6px;
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+                    background-color: #27272a; /* Slightly lighter zinc for hover */
+                }
+                .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+                    background-color: #4f46e5 !important;
+                    font-weight: 600;
+                }
+
+                /* --- Modern Scrollbar Styling (Webkit) --- */
+                
+                /* 1. Datepicker Time List Scrollbar */
+                .react-datepicker__time-list::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-thumb {
+                    background-color: #3f3f46; /* zinc-700 */
+                    border-radius: 10px;
+                }
+                .react-datepicker__time-list::-webkit-scrollbar-thumb:hover {
+                    background-color: #52525b; /* zinc-600 */
+                }
+            `}</style>
+
+            <div
+                className={cn(
+                    "w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col max-h-[90vh]",
+                    "animate-in zoom-in-95 duration-200"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50 bg-zinc-900/30 shrink-0">
+                    <div>
+                        <h2 className="text-lg font-semibold text-zinc-100">
+                            {meeting ? 'Edit Meeting' : 'Schedule Meeting'}
+                        </h2>
+                        <p className="text-xs text-zinc-500 mt-0.5">
+                            {meeting ? 'Update meeting details and attendees.' : 'Create a new calendar event.'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-zinc-500 hover:text-zinc-100 transition-colors p-1 hover:bg-zinc-800 rounded-md"
+                    >
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Form - Applied Custom Scrollbar via Tailwind Utils and CSS logic */}
+                <form
+                    onSubmit={handleSubmit}
+                    className={cn(
+                        "p-6 space-y-6 overflow-y-auto custom-scrollbar",
+                        // Tailwind Scrollbar Utilities for Modern Look
+                        "[&::-webkit-scrollbar]:w-2",
+                        "[&::-webkit-scrollbar-track]:bg-transparent",
+                        "[&::-webkit-scrollbar-thumb]:bg-zinc-800",
+                        "[&::-webkit-scrollbar-thumb]:rounded-full",
+                        "[&::-webkit-scrollbar-thumb]:border-2",
+                        "[&::-webkit-scrollbar-thumb]:border-zinc-950", // Creates 'floating' thumb effect
+                        "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700"
+                    )}
+                >
                     {/* Title */}
-                    <div>
-                        <label className="block text-sm font-medium text-[#aaa] mb-2">
-                            Title <span className="text-red-400">*</span>
-                        </label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Title <span className="text-red-400">*</span></label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={e => updateField('title', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white placeholder-[#555] focus:outline-none focus:border-white transition-colors"
-                            placeholder="Enter meeting title"
+                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                            placeholder="e.g. Q4 Planning Sync"
                             required
                         />
                     </div>
 
+                    {/* Date & Time Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+
+                        {/* Date Picker */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                                <Calendar className="h-3 w-3" /> Date
+                            </label>
+                            <div className="relative w-full">
+                                <DatePicker
+                                    selected={formData.date}
+                                    onChange={(date) => updateField('date', date)}
+                                    dateFormat="MMMM d, yyyy"
+                                    className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all cursor-pointer"
+                                    wrapperClassName="w-full"
+                                    placeholderText="Select date"
+                                    minDate={new Date()}
+                                    showPopperArrow={false}
+                                />
+                                <div className="absolute right-3 top-2.5 pointer-events-none text-zinc-500">
+                                    <ChevronRight className="h-4 w-4 rotate-90" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Time Picker */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Time
+                            </label>
+                            <div className="relative w-full">
+                                <DatePicker
+                                    selected={timeAsDate}
+                                    onChange={handleTimeChange}
+                                    showTimeSelect
+                                    showTimeSelectOnly
+                                    timeIntervals={15}
+                                    timeCaption="Time"
+                                    dateFormat="h:mm aa"
+                                    className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all cursor-pointer"
+                                    wrapperClassName="w-full"
+                                    showPopperArrow={false}
+                                />
+                                <div className="absolute right-3 top-2.5 pointer-events-none text-zinc-500">
+                                    <ChevronRight className="h-4 w-4 rotate-90" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Agenda */}
-                    <div>
-                        <label className="block text-sm font-medium text-[#aaa] mb-2">Agenda</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                            <AlignLeft className="h-3 w-3" /> Agenda
+                        </label>
                         <textarea
                             value={formData.agenda}
                             onChange={e => updateField('agenda', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white placeholder-[#555] focus:outline-none focus:border-white resize-none transition-colors"
-                            rows={3}
-                            placeholder="What will be discussed?"
+                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all resize-none min-h-20"
+                            placeholder="Briefly describe the meeting agenda..."
                         />
                     </div>
 
-                    {/* Date and Time Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-[#aaa] mb-2">
-                                Date <span className="text-red-400">*</span>
+                    {/* Attendees Selection */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-end">
+                            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                                <UserIcon className="h-3 w-3" /> Attendees
                             </label>
-                            <input
-                                type="date"
-                                value={formData.date}
-                                onChange={e => updateField('date', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white focus:outline-none focus:border-white transition-colors"
-                                required
-                            />
+                            <span className="text-xs text-indigo-400 font-medium">{formData.attendees.length} selected</span>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-[#aaa] mb-2">
-                                Time <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                                type="time"
-                                value={formData.scheduled_at}
-                                onChange={e => updateField('scheduled_at', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white focus:outline-none focus:border-white transition-colors"
-                                required
-                            />
+                        <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden">
+                            <div className="p-2 border-b border-zinc-800 flex items-center gap-2">
+                                <Search className="h-4 w-4 text-zinc-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Search users..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-sm text-zinc-200 placeholder-zinc-600 w-full"
+                                />
+                            </div>
+                            <div className={cn(
+                                "max-h-48 overflow-y-auto p-1 space-y-0.5",
+                                // Updated modern scrollbar for attendees list
+                                "[&::-webkit-scrollbar]:w-1.5",
+                                "[&::-webkit-scrollbar-track]:bg-transparent",
+                                "[&::-webkit-scrollbar-thumb]:bg-zinc-700",
+                                "[&::-webkit-scrollbar-thumb]:rounded-full",
+                                "hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600"
+                            )}>
+                                {filteredUsers.map(user => {
+                                    const isSelected = formData.attendees.includes(user.id);
+                                    return (
+                                        <div
+                                            key={user.id}
+                                            onClick={() => toggleAttendee(user.id)}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors group",
+                                                isSelected ? "bg-indigo-500/10" : "hover:bg-zinc-800/50"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0",
+                                                isSelected ? "bg-indigo-500 border-indigo-500" : "border-zinc-600 bg-zinc-900 group-hover:border-zinc-500"
+                                            )}>
+                                                {isSelected && <Check className="h-3 w-3 text-white" />}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className={cn("text-sm font-medium leading-none", isSelected ? "text-indigo-200" : "text-zinc-300")}>{user.username}</span>
+                                                <span className="text-[10px] text-zinc-500">{user.email}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {filteredUsers.length === 0 && (
+                                    <div className="p-4 text-center text-xs text-zinc-500">No users found</div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Attendees */}
-                    <div>
-                        <label className="block text-sm font-medium text-[#aaa] mb-2">Attendees</label>
-                        <Select
-                            isMulti
-                            options={allUsers.map(user => ({
-                                value: user.id,
-                                label: `${user.username} (${user.email})`
-                            }))}
-                            value={allUsers
-                                .filter(user => formData.attendees.includes(user.id))
-                                .map(user => ({
-                                    value: user.id,
-                                    label: `${user.username} (${user.email})`
-                                }))}
-                            onChange={selectedOptions => {
-                                updateField(
-                                    'attendees',
-                                    selectedOptions ? selectedOptions.map(opt => opt.value) : []
-                                );
-                            }}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                            placeholder="Select attendees..."
-                            styles={selectStyles}
-                        />
-                    </div>
-
-                    {/* Meeting Link */}
-                    <div>
-                        <label className="block text-sm font-medium text-[#aaa] mb-2">Meeting Link</label>
-                        <input
-                            type="url"
-                            value={formData.meeting_link}
-                            onChange={e => updateField('meeting_link', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white placeholder-[#555] focus:outline-none focus:border-white transition-colors"
-                            placeholder="https://meet.google.com/..."
-                        />
-                    </div>
-
-                    {/* Organizer and Reminder Grid */}
+                    {/* Link & Organizer Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-[#aaa] mb-2">Organizer</label>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                                <LinkIcon className="h-3 w-3" /> Link
+                            </label>
+                            <input
+                                type="url"
+                                value={formData.meeting_link}
+                                onChange={e => updateField('meeting_link', e.target.value)}
+                                className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                                placeholder="https://meet.google.com/..."
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                                <UserIcon className="h-3 w-3" /> Organizer
+                            </label>
                             <input
                                 type="text"
                                 value={formData.organizer}
                                 onChange={e => updateField('organizer', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white placeholder-[#555] focus:outline-none focus:border-white transition-colors"
-                                placeholder="Organizer name"
+                                className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                                placeholder="Host name"
                             />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-[#aaa] mb-2">Reminder</label>
-                            <select
-                                value={formData.reminder_interval}
-                                onChange={e => updateField('reminder_interval', e.target.value)}
-                                className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white focus:outline-none focus:border-white transition-colors appearance-none cursor-pointer"
-                            >
-                                <option value="0">No reminder</option>
-                                <option value="5">5 minutes before</option>
-                                <option value="15">15 minutes before</option>
-                                <option value="30">30 minutes before</option>
-                                <option value="60">1 hour before</option>
-                                <option value="1440">1 day before</option>
-                            </select>
-                        </div>
                     </div>
 
-                    {/* Notes */}
-                    <div>
-                        <label className="block text-sm font-medium text-[#aaa] mb-2">Notes</label>
-                        <textarea
-                            value={formData.notes}
-                            onChange={e => updateField('notes', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-[#1a1a1a] border border-[#222] rounded-lg text-white placeholder-[#555] focus:outline-none focus:border-white resize-none transition-colors"
-                            rows={4}
-                            placeholder="Additional notes or details..."
-                        />
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="flex-1 px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    {/* Reminder */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                            <Bell className="h-3 w-3" /> Reminder
+                        </label>
+                        <Select
+                            value={formData.reminder_interval}
+                            onValueChange={(val) => updateField('reminder_interval', val)}
                         >
-                            {isSubmitting ? 'Saving...' : meeting ? 'Update Meeting' : 'Create Meeting'}
-                        </button>
+                            <SelectTrigger className="w-full bg-zinc-900/50 border-zinc-800 text-zinc-100 focus:ring-indigo-500/20 focus:border-indigo-500/50">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+                                <SelectItem value="0">No reminder</SelectItem>
+                                <SelectItem value="5">5 minutes before</SelectItem>
+                                <SelectItem value="15">15 minutes before</SelectItem>
+                                <SelectItem value="30">30 minutes before</SelectItem>
+                                <SelectItem value="60">1 hour before</SelectItem>
+                                <SelectItem value="1440">1 day before</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4 border-t border-zinc-800">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2.5 bg-[#1a1a1a] border border-[#222] text-white rounded-lg font-medium hover:bg-[#222] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                         >
                             Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    <span>{meeting ? 'Update Meeting' : 'Schedule Meeting'}</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

@@ -1,37 +1,45 @@
 export default function TeamCardSkeleton() {
     return (
-        <div className="bg-[#111] border border-[#222] rounded p-6 animate-pulse">
-            {/* Header skeleton */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#222]" />
-                <div className="h-5 bg-[#222] rounded w-32" />
-            </div>
+        <div className="flex flex-col p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 animate-pulse h-full">
 
-            {/* Team lead skeleton */}
-            <div className="mb-4 p-3 bg-[#1a1a1a] rounded border border-[#333]">
-                <div className="h-3 bg-[#222] rounded w-16 mb-2" />
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#222]" />
-                    <div className="h-4 bg-[#222] rounded w-24" />
+            {/* Header: Icon + Title */}
+            <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-zinc-800 shrink-0" />
+                <div className="flex-1 space-y-2 py-1">
+                    <div className="h-5 bg-zinc-800 rounded w-1/2" />
+                    <div className="h-3 bg-zinc-800/50 rounded w-1/3" />
                 </div>
             </div>
 
-            {/* Members skeleton */}
-            <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-[#222]" />
-                            <div className="h-4 bg-[#222] rounded w-28" />
+            <div className="space-y-6">
+                {/* Team Lead Section */}
+                <div className="space-y-2">
+                    <div className="h-2.5 w-16 bg-zinc-800 rounded" /> {/* Label */}
+                    <div className="flex items-center gap-3 p-2 rounded-lg border border-zinc-800/50 bg-zinc-900/20">
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 shrink-0" />
+                        <div className="space-y-1.5 flex-1">
+                            <div className="h-3 w-24 bg-zinc-800 rounded" />
+                            <div className="h-2 w-32 bg-zinc-800/50 rounded" />
                         </div>
-                        <div className="h-5 bg-[#222] rounded w-16" />
                     </div>
-                ))}
-            </div>
+                </div>
 
-            {/* Footer skeleton */}
-            <div className="mt-4 pt-4 border-t border-[#222]">
-                <div className="h-3 bg-[#222] rounded w-20" />
+                {/* Members Section */}
+                <div className="space-y-2">
+                    <div className="flex justify-between items-end">
+                        <div className="h-2.5 w-16 bg-zinc-800 rounded" /> {/* Label */}
+                        <div className="h-2 w-10 bg-zinc-800/50 rounded" /> {/* Count */}
+                    </div>
+
+                    <div className="flex items-center pl-2 h-8">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div
+                                key={i}
+                                className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-950 -ml-2"
+                            />
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
