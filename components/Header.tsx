@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { User } from '@/lib/types/users';
 import {
   Bell, Search, Calendar, Check, Trash2, Info,
-  CheckCircle2, AlertTriangle, XCircle
+  CheckCircle2, AlertTriangle, XCircle, LogOut,
+  User as UserIcon, Settings, ChevronDown, CreditCard
 } from 'lucide-react';
 import { cn, formatTimeAgo } from '@/lib/utils';
 import {
@@ -13,7 +16,7 @@ import {
   markAllNotificationsAsRead,
   deleteNotification
 } from '@/lib/api/notifications';
-import { Notification } from '@/lib/types/notifications'; // Import type from types file
+import { Notification } from '@/lib/types/notifications';
 import { toast } from 'sonner';
 
 interface HeaderProps {
@@ -22,19 +25,27 @@ interface HeaderProps {
 }
 
 const Header = ({ title, user }: HeaderProps) => {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
-  // Changed NotificationItem to Notification
+
+  // Notification State
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // Profile State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
+
+  // Refs for click-outside logic
   const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   // --- 1. Data Fetching ---
   const loadNotifications = async () => {
     try {
-      // Changed fetchNotifications() to listNotifications()
       const data = await listNotifications();
       setNotifications(data);
     } catch (error) {
@@ -51,9 +62,15 @@ const Header = ({ title, user }: HeaderProps) => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0);
     window.addEventListener('scroll', handleScroll);
 
+    // Unified Click Outside Handler
     const handleClickOutside = (event: MouseEvent) => {
+      // Close Notifications if clicked outside
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
+      }
+      // Close Profile if clicked outside
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -65,11 +82,10 @@ const Header = ({ title, user }: HeaderProps) => {
     };
   }, []);
 
-  // --- 2. Actions ---
+  // --- 2. Notification Actions ---
   const handleMarkRead = async (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     try {
-      // Changed markNotificationRead to markNotificationAsRead
       await markNotificationAsRead(id);
     } catch (e) {
       toast.error("Failed to update status");
@@ -79,7 +95,6 @@ const Header = ({ title, user }: HeaderProps) => {
   const handleMarkAllRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     try {
-      // Changed markAllNotificationsRead to markAllNotificationsAsRead
       await markAllNotificationsAsRead();
       toast.success("All marked as read");
     } catch (e) {
@@ -91,14 +106,24 @@ const Header = ({ title, user }: HeaderProps) => {
     e.stopPropagation();
     setNotifications(prev => prev.filter(n => n.id !== id));
     try {
-      // Changed deleteNotificationApi to deleteNotification
       await deleteNotification(id);
     } catch (e) {
       toast.error("Failed to delete");
     }
   };
 
-  // Icons Helper
+  // --- 3. Profile Actions ---
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      toast.error('Logout failed');
+    }
+  };
+
+  // Helpers
   const getIcon = (type: string) => {
     switch (type) {
       case 'success': return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
@@ -142,7 +167,7 @@ const Header = ({ title, user }: HeaderProps) => {
 
           <div className="flex items-center gap-2 md:gap-3">
 
-            {/* --- Notifications --- */}
+            {/* --- Notifications Dropdown --- */}
             <div className="relative" ref={notifRef}>
               <button
                 className={cn(
@@ -219,15 +244,77 @@ const Header = ({ title, user }: HeaderProps) => {
 
             <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
 
-            {/* User Avatar */}
-            <div className="flex items-center gap-3 pl-2">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-zinc-200 leading-none">{user.username}</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{user.role}</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-indigo-500/20 ring-2 ring-zinc-950">
-                {getInitials(user.username)}
-              </div>
+            {/* --- User Profile Dropdown --- */}
+            <div className="relative pl-2" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-3 group focus:outline-none"
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-zinc-200 leading-none group-hover:text-white transition-colors">
+                    {user.username}
+                  </p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">
+                    {user.role}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-indigo-500/20 ring-2 ring-zinc-950 group-hover:ring-zinc-800 transition-all">
+                  {getInitials(user.username)}
+                </div>
+                <ChevronDown className={cn("h-4 w-4 text-zinc-500 transition-transform duration-200 hidden sm:block", isProfileOpen && "rotate-180")} />
+              </button>
+
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-3 w-56 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+
+                  {/* Dropdown Header Info */}
+                  <div className="px-4 py-3 border-b border-zinc-800 bg-zinc-900/30">
+                    <p className="text-sm font-medium text-white truncate">{user.username}</p>
+                    <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="p-1 space-y-0.5">
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    >
+                      <UserIcon className="h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+
+                    {/* <Link
+                      href="/billing"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span>Billing</span>
+                    </Link> */}
+                  </div>
+
+                  {/* Footer / Logout */}
+                  <div className="p-1 border-t border-zinc-800 mt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Log out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
