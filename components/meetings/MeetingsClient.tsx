@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Lock } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useAttendance } from '@/hooks/useAttendance';
@@ -12,6 +12,7 @@ import EmptyState from './EmptyState';
 import type { Meeting, MeetingCreate, MeetingUpdate } from '@/lib/types/meetings';
 import type { User } from '@/lib/types/users';
 import { listUsers } from '@/lib/api/users';
+import { cn } from '@/lib/utils';
 
 // Dynamic imports for modals to reduce initial bundle size
 const MeetingModal = dynamic(() => import('./MeetingModal'), {
@@ -42,24 +43,27 @@ export default function MeetingsClient() {
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
 
-    const [allUsers, setAllUsers] = useState<User[]>([]); // State to hold all users for attendee selection
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     // Authentication guard
     if (!user) {
         return (
-            <main className="p-6 flex items-center justify-center min-h-[500px]">
-                <div className="text-center max-w-md">
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-                        <Calendar className="h-12 w-12 text-[#444]" />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 animate-in fade-in duration-500">
+                <div className="relative mb-8 group">
+                    <div className="absolute inset-0 bg-red-500/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="relative w-24 h-24 rounded-3xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center shadow-2xl rotate-3 transition-transform duration-500 group-hover:rotate-6">
+                        <Lock className="h-10 w-10 text-zinc-500 group-hover:text-red-400 transition-colors duration-300" />
                     </div>
-                    <h3 className="text-2xl font-semibold text-white mb-3">
+                </div>
+                <div className="max-w-md text-center space-y-3">
+                    <h3 className="text-xl font-bold text-zinc-100 tracking-tight">
                         Authentication Required
                     </h3>
-                    <p className="text-[#aaa] mb-8 leading-relaxed">
-                        Please log in to view and manage meetings.
+                    <p className="text-sm text-zinc-500 leading-relaxed">
+                        Please log in to view and manage meetings. Access is restricted to authorized personnel only.
                     </p>
                 </div>
-            </main>
+            </div>
         );
     }
 
@@ -89,37 +93,46 @@ export default function MeetingsClient() {
         setSelectedMeeting(null);
     };
 
-    // Wrapper function to handle both create and update
     const handleSaveMeeting = async (data: MeetingCreate | MeetingUpdate, id?: number): Promise<boolean> => {
         if (id !== undefined) {
-            // Update existing meeting
             return await editMeeting(id, data as MeetingUpdate);
         } else {
-            // Create new meeting
             return await addMeeting(data as MeetingCreate);
         }
     };
 
     return (
-        <main className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-white">Meetings</h2>
+        <div className="space-y-8 animate-in fade-in duration-500">
+
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-zinc-900/50 border border-zinc-800 rounded-xl shadow-sm">
+                        <Calendar className="h-6 w-6 text-indigo-500" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Meetings</h1>
+                        <p className="text-sm text-zinc-500">
+                            Schedule, track, and manage team attendance.
+                        </p>
+                    </div>
+                </div>
+
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-all"
+                    className="group inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-95"
                 >
-                    <Plus className="h-4 w-4" />
-                    New Meeting
+                    <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                    <span>New Meeting</span>
                 </button>
             </div>
 
-            {/* Attendance Overview */}
+            {/* Attendance Overview (Admin/Core Only) */}
             {(user.role === 'admin' || user.role === 'core') && attendanceCounts.length > 0 && (
                 <AttendanceOverview attendanceCounts={attendanceCounts} />
             )}
 
-            {/* Meetings List or Empty State */}
+            {/* Content Area */}
             {!meetings || meetings.length === 0 ? (
                 <EmptyState onCreateMeeting={() => handleOpenModal()} />
             ) : (
@@ -137,7 +150,7 @@ export default function MeetingsClient() {
                 </div>
             )}
 
-            {/* Modals - Only rendered when needed */}
+            {/* Modals */}
             {showModal && (
                 <MeetingModal
                     meeting={editingMeeting}
@@ -153,7 +166,6 @@ export default function MeetingsClient() {
                     onClose={handleCloseAttendanceModal}
                 />
             )}
-        </main>
+        </div>
     );
 }
-
