@@ -18,6 +18,27 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+// --- Placeholder Types & Mock API (Needed since external files are unavailable) ---
+
+interface Project {
+    id: number;
+    name: string;
+}
+
+const mockProjects: Project[] = [
+    { id: 1, name: 'Spaceborn Core' },
+    { id: 2, name: 'UI/UX Redesign' },
+    { id: 3, name: 'Database Migration' },
+    { id: 4, name: 'Server Maintenance' },
+];
+
+// Mock API call for projects (to make the component runnable)
+const listProjects = async (): Promise<Project[]> => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve(mockProjects), 200);
+    });
+};
+
 // --- Constants & Config ---
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; icon: any }> = {
     'todo': { label: 'Pending', color: 'text-amber-400 bg-amber-400/10 border-amber-400/20', icon: Circle },
@@ -77,15 +98,17 @@ interface TaskModalProps {
     onSave: (data: any) => Promise<void>;
     task?: Task | null;
     users: User[];
+    projects: Project[]; // NEW PROP
     isSubmitting: boolean;
 }
 
-const TaskModal = ({ isOpen, onClose, onSave, task, users, isSubmitting }: TaskModalProps) => {
+const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmitting }: TaskModalProps) => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         status: 'todo' as TaskStatus,
-        assignee_id: '' as string | number
+        assignee_id: '' as string | number,
+        project_id: '' as string | number, // NEW STATE FIELD
     });
 
     useEffect(() => {
@@ -94,10 +117,17 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, isSubmitting }: TaskM
                 title: task.title,
                 description: task.description || '',
                 status: task.status,
-                assignee_id: task.assignee_id || 'unassigned'
+                assignee_id: task.assignee_id || 'unassigned',
+                project_id: task.project_id || 'unassigned' // Initialize project ID
             });
         } else {
-            setFormData({ title: '', description: '', status: 'todo' as TaskStatus, assignee_id: 'unassigned' });
+            setFormData({
+                title: '',
+                description: '',
+                status: 'todo' as TaskStatus,
+                assignee_id: 'unassigned',
+                project_id: 'unassigned' // Default unassigned
+            });
         }
     }, [task, isOpen]);
 
@@ -107,14 +137,15 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, isSubmitting }: TaskM
         e.preventDefault();
         const payload = {
             ...formData,
-            assignee_id: formData.assignee_id === 'unassigned' ? null : Number(formData.assignee_id)
+            assignee_id: formData.assignee_id === 'unassigned' ? null : Number(formData.assignee_id),
+            project_id: formData.project_id === 'unassigned' ? null : Number(formData.project_id) // Handle project ID submission
         };
         onSave(payload);
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between p-6 border-b border-zinc-800">
                     <h2 className="text-lg font-semibold text-zinc-100">
                         {task ? 'Edit Task' : 'New Task'}
@@ -143,7 +174,9 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, isSubmitting }: TaskM
                             placeholder="Add details..."
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    {/* Updated Layout: Three columns for Status, Assignee, Project */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-zinc-400 uppercase">Status</label>
                             <Select
@@ -177,7 +210,26 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, isSubmitting }: TaskM
                                 </SelectContent>
                             </Select>
                         </div>
+                        {/* New Project Selection Field */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400 uppercase">Project</label>
+                            <Select
+                                value={String(formData.project_id)}
+                                onValueChange={(v) => setFormData({ ...formData, project_id: v })}
+                            >
+                                <SelectTrigger className="w-full bg-zinc-900 border-zinc-800 text-zinc-200">
+                                    <SelectValue placeholder="Select project" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
+                                    <SelectItem value="unassigned">No Project</SelectItem>
+                                    {projects.map(p => (
+                                        <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
+
                     <div className="pt-4 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Cancel</button>
                         <button
@@ -201,6 +253,7 @@ export default function TasksView() {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]); // NEW STATE
     const [loading, setLoading] = useState(true);
 
     // CRUD State
@@ -212,12 +265,14 @@ export default function TasksView() {
         if (!user) return;
         try {
             setLoading(true);
-            const [tasksData, usersData] = await Promise.all([
+            const [tasksData, usersData, projectsData] = await Promise.all([ // UPDATED PROMISE.ALL
                 listTasks(),
                 listUsers(),
+                listProjects(), // NEW API CALL
             ]);
             setTasks(tasksData);
             setUsers(usersData);
+            setProjects(projectsData); // NEW STATE SET
         } catch (error) {
             console.error('Failed to fetch data:', error);
             toast.error("Failed to load tasks");
@@ -411,6 +466,7 @@ export default function TasksView() {
                 onSave={handleSaveTask}
                 task={editingTask}
                 users={users}
+                projects={projects} // NEW PROP PASS
                 isSubmitting={isSubmitting}
             />
         </div>
