@@ -9,9 +9,50 @@ interface AttendanceOverviewProps {
     attendanceCounts: UserAttendanceCount[];
 }
 
+// --- Loading Skeleton Component ---
+const AttendanceCardSkeleton = () => (
+    <div className="flex flex-col justify-between bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 animate-pulse h-[140px]">
+        <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-zinc-700" />
+                <div className="space-y-1">
+                    <div className="h-4 w-24 bg-zinc-700 rounded" />
+                    <div className="h-3 w-32 bg-zinc-800 rounded" />
+                </div>
+            </div>
+            {/* Trophy Placeholder */}
+            <div className="p-1.5 bg-zinc-800 rounded-md">
+                <Medal className="h-4 w-4 text-zinc-700" />
+            </div>
+        </div>
+        <div className="mt-2">
+            <div className="flex items-end justify-between mb-2">
+                <div className="h-3 w-16 bg-zinc-800 rounded" />
+                <div className="h-6 w-10 bg-zinc-700 rounded" />
+            </div>
+            {/* Progress Bar Placeholder */}
+            <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-full w-2/3 bg-zinc-700 rounded-full" />
+            </div>
+        </div>
+    </div>
+);
+
+
 export default function AttendanceOverview({ attendanceCounts }: AttendanceOverviewProps) {
     const [isViewAllOpen, setIsViewAllOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    // State to simulate loading delay before data is considered finalized (empty or full)
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate data fetching delay
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 500); // 0.5 second delay to show the skeleton
+
+        return () => clearTimeout(timer);
+    }, [attendanceCounts]);
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -46,6 +87,9 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
             .toUpperCase();
     };
 
+    const displayData = !isLoading && attendanceCounts.length > 0;
+    const isDataEmpty = !isLoading && attendanceCounts.length === 0;
+
     return (
         <div className="mb-8 space-y-4">
             {/* Header Section */}
@@ -70,7 +114,8 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
                     {/* View All Button */}
                     <button
                         onClick={() => setIsViewAllOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors border border-zinc-700"
+                        disabled={isLoading || isDataEmpty}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         View Full Report
                         <ChevronRight className="h-3 w-3" />
@@ -80,7 +125,13 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
 
             {/* Grid Layout (Top 6) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {attendanceCounts.slice(0, 6).map((user, index) => {
+                {/* 1. Loading Skeleton */}
+                {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                    <AttendanceCardSkeleton key={i} />
+                ))}
+
+                {/* 2. Actual Data */}
+                {displayData && attendanceCounts.slice(0, 6).map((user, index) => {
                     const percentage = Math.round((user.meetings_joined / maxMeetings) * 100);
                     const isTopPerformer = index === 0;
 
@@ -147,7 +198,8 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
                     );
                 })}
 
-                {attendanceCounts.length === 0 && (
+                {/* 3. Empty State (only when loading is finished AND data is empty) */}
+                {isDataEmpty && (
                     <div className="col-span-full py-12 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-xl bg-zinc-950/50">
                         <div className="h-12 w-12 rounded-full bg-zinc-900 flex items-center justify-center mb-3">
                             <UserIcon className="h-6 w-6 text-zinc-600" />
@@ -169,7 +221,7 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0">
                             <div>
                                 <h3 className="text-lg font-semibold text-zinc-100">Full Attendance Report</h3>
                                 <p className="text-xs text-zinc-500">Complete list of all users and their meeting participation.</p>
@@ -183,7 +235,7 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
                         </div>
 
                         {/* Modal Search */}
-                        <div className="p-4 border-b border-zinc-800 bg-zinc-900/20">
+                        <div className="p-4 border-b border-zinc-800 bg-zinc-900/20 shrink-0">
                             <div className="relative">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                                 <input
@@ -198,7 +250,7 @@ export default function AttendanceOverview({ attendanceCounts }: AttendanceOverv
 
                         {/* Modal List */}
                         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-                            {filteredAllUsers.length === 0 ? (
+                            {filteredAllUsers.length === 0 && searchTerm !== '' ? (
                                 <div className="py-12 text-center text-zinc-500 text-sm">
                                     No users found matching "{searchTerm}"
                                 </div>
