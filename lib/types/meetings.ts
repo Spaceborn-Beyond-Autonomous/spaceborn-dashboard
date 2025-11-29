@@ -45,7 +45,7 @@ export interface MeetingUpdate {
 }
 
 export interface MeetingAttendanceCreate {
-    user_ids: number[];
+    attendees: number[];
 }
 
 export interface MeetingAttendanceRead {

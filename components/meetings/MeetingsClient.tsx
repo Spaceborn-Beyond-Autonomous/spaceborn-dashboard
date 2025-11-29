@@ -164,6 +164,7 @@ export default function MeetingsClient() {
                 <AttendanceModal
                     meeting={selectedMeeting}
                     onClose={handleCloseAttendanceModal}
+                    allUsers={allUsers}
                 />
             )}
         </div>
