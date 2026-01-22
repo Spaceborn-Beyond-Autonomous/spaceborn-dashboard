@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 // New Codes
 import { getProjects } from '@/lib/api/projects';
 import { Project } from '@/lib/types/projects';
+import { ProjectMin } from '@/lib/types/project_min';
 
 import {
     Select,
@@ -289,7 +290,7 @@ export default function TasksView() {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]); // NEW STATE
+    const [projects, setProjects] = useState<ProjectMin[]>([]);
     const [loading, setLoading] = useState(true);
 
     // CRUD State
