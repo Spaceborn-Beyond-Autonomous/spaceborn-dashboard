@@ -103,7 +103,7 @@ interface TaskModalProps {
     onSave: (data: any) => Promise<void>;
     task?: Task | null;
     users: User[];
-    projects: Project[]; // NEW PROP
+    projects: ProjectMin[];
     isSubmitting: boolean;
 }
 
