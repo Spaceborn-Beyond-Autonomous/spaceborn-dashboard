@@ -1,9 +1,13 @@
 import { api } from '../apiBase';
 import { Project } from '../types/projects';
-
+import { ProjectMin } from '../types/project_min';
 
 export async function getProjects(): Promise<ProjectMin[]> {
-    return api('projects/');
+    const projects = await api('projects/');
+    return projects.map((p: Project) => ({
+        id: p.id,
+        name: p.name
+    }));
 }
 
 export async function getProject(id: string): Promise<Project> {
