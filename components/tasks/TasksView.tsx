@@ -10,6 +10,9 @@ import { Loader2, CheckCircle2, Clock, Circle, Plus, Pencil, Trash2, X, AlertCir
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+// New Code
+import { getProjects } from '@/lib/api/projects';
+
 import {
     Select,
     SelectContent,
@@ -20,24 +23,24 @@ import {
 
 // --- Placeholder Types & Mock API (Needed since external files are unavailable) ---
 
-interface Project {
-    id: number;
-    name: string;
-}
+// interface Project {
+//     id: number;
+//     name: string;
+// }
 
-const mockProjects: Project[] = [
-    { id: 1, name: 'Spaceborn Core' },
-    { id: 2, name: 'UI/UX Redesign' },
-    { id: 3, name: 'Database Migration' },
-    { id: 4, name: 'Server Maintenance' },
-];
+// const mockProjects: Project[] = [
+//     { id: 1, name: 'Spaceborn Core' },
+//     { id: 2, name: 'UI/UX Redesign' },
+//     { id: 3, name: 'Database Migration' },
+//     { id: 4, name: 'Server Maintenance' },
+// ];
 
-// Mock API call for projects (to make the component runnable)
-const listProjects = async (): Promise<Project[]> => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve(mockProjects), 200);
-    });
-};
+// // Mock API call for projects (to make the component runnable)
+// const listProjects = async (): Promise<Project[]> => {
+//     return new Promise(resolve => {
+//         setTimeout(() => resolve(mockProjects), 200);
+//     });
+// };
 
 // --- Constants & Config ---
 const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; icon: any }> = {
@@ -111,25 +114,47 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmittin
         project_id: '' as string | number, // NEW STATE FIELD
     });
 
+    // useEffect(() => {
+    //     if (task) {
+    //         setFormData({
+    //             title: task.title,
+    //             description: task.description || '',
+    //             status: task.status,
+    //             assignee_id: task.assignee_id || 'unassigned',
+    //             project_id: task.project_id || 'unassigned' // Initialize project ID
+    //         });
+    //     } else {
+    //         setFormData({
+    //             title: '',
+    //             description: '',
+    //             status: 'todo' as TaskStatus,
+    //             // assignee_id: 'unassigned',
+    //             // project_id: 'unassigned' // Default unassigned
+    //             assignee_id: '',
+    //             project_id: ''
+    //         });
+    //     }
+    // }, [task, isOpen]);
+
     useEffect(() => {
-        if (task) {
-            setFormData({
-                title: task.title,
-                description: task.description || '',
-                status: task.status,
-                assignee_id: task.assignee_id || 'unassigned',
-                project_id: task.project_id || 'unassigned' // Initialize project ID
-            });
-        } else {
-            setFormData({
-                title: '',
-                description: '',
-                status: 'todo' as TaskStatus,
-                assignee_id: 'unassigned',
-                project_id: 'unassigned' // Default unassigned
-            });
-        }
-    }, [task, isOpen]);
+    if (task) {
+        setFormData({
+            title: task.title,
+            description: task.description || '',
+            status: task.status,
+            assignee_id: task.assignee_id ? String(task.assignee_id) : '',
+            project_id: task.project_id ? String(task.project_id) : '',
+        });
+    } else {
+        setFormData({
+            title: '',
+            description: '',
+            status: 'todo',
+            assignee_id: '',
+            project_id: ''
+        });
+    }
+}, [task, isOpen]);
 
     if (!isOpen) return null;
 
@@ -137,8 +162,10 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmittin
         e.preventDefault();
         const payload = {
             ...formData,
-            assignee_id: formData.assignee_id === 'unassigned' ? null : Number(formData.assignee_id),
-            project_id: formData.project_id === 'unassigned' ? null : Number(formData.project_id) // Handle project ID submission
+            // assignee_id: formData.assignee_id === 'unassigned' ? null : Number(formData.assignee_id),
+            assignee_id: formData.assignee_id ? Number(formData.assignee_id) : null,
+            // project_id: formData.project_id === 'unassigned' ? null : Number(formData.project_id) // Handle project ID submission
+            project_id: Number(formData.project_id)
         };
         onSave(payload);
     };
@@ -203,7 +230,8 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmittin
                                     <SelectValue placeholder="Select user" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
-                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {/* <SelectItem value="unassigned">Unassigned</SelectItem> */}
+                                    <SelectItem value="">Unassigned</SelectItem>
                                     {users.map(u => (
                                         <SelectItem key={u.id} value={String(u.id)}>{u.username}</SelectItem>
                                     ))}
@@ -220,10 +248,17 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmittin
                                 <SelectTrigger className="w-full bg-zinc-900 border-zinc-800 text-zinc-200">
                                     <SelectValue placeholder="Select project" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
+                                {/* <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
                                     <SelectItem value="unassigned">No Project</SelectItem>
                                     {projects.map(p => (
                                         <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent> */}
+                                <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
+                                    {projects.map(p => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                            {p.name}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -268,7 +303,7 @@ export default function TasksView() {
             const [tasksData, usersData, projectsData] = await Promise.all([ // UPDATED PROMISE.ALL
                 listTasks(),
                 listUsers(),
-                listProjects(), // NEW API CALL
+                getProjects(), // REAL API
             ]);
             setTasks(tasksData);
             setUsers(usersData);
