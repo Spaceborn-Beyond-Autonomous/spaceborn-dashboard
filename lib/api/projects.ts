@@ -2,7 +2,7 @@ import { api } from '../apiBase';
 import { Project } from '../types/projects';
 
 
-export async function getProjects(): Promise<Project[]> {
+export async function getProjects(): Promise<ProjectMin[]> {
     return api('projects/');
 }
 
