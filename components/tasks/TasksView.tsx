@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 // New Codes
 import { getProjects } from '@/lib/api/projects';
+import { Project } from '@/lib/types/projects';
 
 import {
     Select,
