@@ -151,7 +151,8 @@ const TaskModal = ({ isOpen, onClose, onSave, task, users, projects, isSubmittin
         setFormData({
             title: '',
             description: '',
-            status: 'todo',
+            // status: 'todo',
+            status: 'todo' as TaskStatus,
             assignee_id: '',
             project_id: ''
         });

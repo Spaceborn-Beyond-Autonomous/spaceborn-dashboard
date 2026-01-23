@@ -1,6 +1,5 @@
-// hooks/useProjects.ts
 import { useState, useEffect, useCallback } from 'react';
-import { getProjects, createProject as apiCreateProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject } from '@/lib/api/projects';
+import { getProjects, createProject as apiCreate, updateProject as apiUpdate, deleteProject as apiDelete } from '@/lib/api/projects';
 import { Project, ProjectFormData } from '@/lib/types/projects';
 
 export function useProjects() {
@@ -10,8 +9,6 @@ export function useProjects() {
 
     const fetchProjects = useCallback(async () => {
         setLoading(true);
-        setError(null);
-
         try {
             const data = await getProjects();
             setProjects(data);
@@ -27,29 +24,21 @@ export function useProjects() {
     }, [fetchProjects]);
 
     const createProject = async (data: ProjectFormData) => {
-        const newProject = await apiCreateProject(data);
-        setProjects(prev => [...prev, newProject]);
-        return newProject;
+        const created = await apiCreate(data);
+        setProjects(prev => [...prev, created]);
+        return created;
     };
 
     const updateProject = async (id: number, data: Partial<ProjectFormData>) => {
-        const updated = await apiUpdateProject(id, data);
+        const updated = await apiUpdate(id, data);
         setProjects(prev => prev.map(p => p.id === id ? updated : p));
         return updated;
     };
 
     const deleteProject = async (id: number) => {
-        await apiDeleteProject(id);
+        await apiDelete(id);
         setProjects(prev => prev.filter(p => p.id !== id));
     };
 
-    return {
-        projects,
-        loading,
-        error,
-        createProject,
-        updateProject,
-        deleteProject,
-        refetch: fetchProjects
-    };
+    return { projects, loading, error, createProject, updateProject, deleteProject, refetch: fetchProjects };
 }
