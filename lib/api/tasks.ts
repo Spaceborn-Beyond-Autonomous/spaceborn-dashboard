@@ -20,14 +20,14 @@ export function createTask(body: any) {
 }
 
 export function updateTask(id: number, body: any) {
-    return api(`tasks/${id}/`, {
-        method: "PUT",
+    return api(`tasks/${id}`, {
+        method: "PATCH",
         body: JSON.stringify(body),
     });
 }
 
 export function deleteTask(id: number) {
-    return api(`tasks/${id}/`, {
+    return api(`tasks/${id}`, {
         method: "DELETE",
     });
 }
