@@ -42,7 +42,7 @@ export async function login(credentials: { email: string; password: string }) {
         body: JSON.stringify(payload),
     };
 
-    const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/login/`, requestOptions);
+    const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/users/login`, requestOptions);
 
     const data = await res.json();
     console.log('Response data:', data);
