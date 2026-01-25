@@ -69,7 +69,7 @@ export function TopicSection({
                         <ProjectCard
                             key={project.id}
                             project={project}
-                            onEdit={() => onEditProject(topic, project)}
+                            onEdit={() => onEditProject(project)}
                             onDelete={onDeleteProject}
                         />
                     ))}
