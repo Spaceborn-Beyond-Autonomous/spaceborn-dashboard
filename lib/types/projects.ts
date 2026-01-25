@@ -60,3 +60,11 @@ export interface ProjectFormData {
     team_id?: number;
     tags?: string[];
 }
+
+
+export interface Topic {
+    id: string;
+    name: string;
+    open: boolean;
+    projects: Project[];
+}    
