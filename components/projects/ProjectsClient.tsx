@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useProjects } from '@/hooks/useProjects';
-import { Project, ProjectFormData } from '@/lib/types/projects';
+import { Project, ProjectFormData, Topic } from '@/lib/types/projects';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectModal } from '@/components/projects/ProjectModal';
 import { ProjectsEmptyState } from '@/components/projects/EmptyState';
+import { TopicModal } from '@/components/projects/TopicModal';
+import { TopicSection } from '@/components/projects/TopicSection';
 import { toast } from 'sonner';
 import { LoadingState } from '@/components/projects/LoadingState';
 import { ErrorState } from '@/components/projects/ErrorState';
@@ -22,39 +24,107 @@ export default function ProjectsClient() {
         refetch
     } = useProjects();
 
-    const [showModal, setShowModal] = useState(false);
+    const [showTopicModal, setShowTopicModal] = useState(false);
+    const [showProjectModal, setShowProjectModal] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [topics, setTopics] = useState<Topic[]>([]);
 
-    const handleOpenModal = (project?: Project) => {
+    // Organize projects into topics on data load
+    useEffect(() => {
+        if (projects && projects.length > 0) {
+            const defaultTopic: Topic = {
+                id: 'default',
+                name: 'Uncategorized',
+                open: true,
+                projects: projects.filter(p => !p.tags?.includes('topic:'))
+            };
+
+            const topicProjects: Topic[] = projects
+                .filter(p => p.tags && p.tags.some(t => t.startsWith('topic:')))
+                .reduce((acc: Topic[], project: Project) => {
+                    const topicTag = project.tags?.find(t => t.startsWith('topic:'));
+                    if (topicTag) {
+                        const topicName = topicTag.replace('topic:', '');
+                        let topic = acc.find(t => t.name === topicName);
+                        
+                        if (!topic) {
+                            topic = {
+                                id: `topic-${topicName.toLowerCase().replace(/\s+/g, '-')}`,
+                                name: topicName,
+                                open: false,
+                                projects: []
+                            };
+                            acc.push(topic);
+                        }
+                        topic.projects.push(project);
+                    }
+                    return acc;
+                }, []);
+
+            setTopics([defaultTopic, ...topicProjects]);
+        } else {
+            setTopics([]);
+        }
+    }, [projects]);
+
+    const handleOpenTopicModal = () => {
+        setSelectedTopic(null);
+        setShowTopicModal(true);
+    };
+
+    const handleOpenProjectModal = (topic?: Topic, project?: Project) => {
+        setSelectedTopic(topic || null);
         setEditingProject(project || null);
-        setShowModal(true);
+        setShowProjectModal(true);
     };
 
-    const handleCloseModal = () => {
-        setShowModal(false);
+    const handleCloseModals = () => {
+        setShowTopicModal(false);
+        setShowProjectModal(false);
         setEditingProject(null);
+        setSelectedTopic(null);
     };
 
-    const handleSubmit = async (formData: ProjectFormData) => {
+    const handleTopicSubmit = (topicName: string) => {
+        if (topicName.trim()) {
+            const newTopic: Topic = {
+                id: `topic-${topicName.toLowerCase().replace(/\s+/g, '-')}`,
+                name: topicName,
+                open: true,
+                projects: []
+            };
+            setTopics(prev => [newTopic, ...prev.filter(t => t.id !== 'default' || t !== newTopic)]);
+            setSelectedTopic(newTopic);
+            setShowTopicModal(false);
+            setShowProjectModal(true);
+        }
+    };
+
+    const handleSubmitProject = async (formData: ProjectFormData) => {
         setIsSubmitting(true);
 
         try {
+            // Add topic tag if project is in a topic
+            const dataWithTopic = selectedTopic && selectedTopic.id !== 'default'
+                ? {
+                    ...formData,
+                    tags: formData.tags ? [...formData.tags, `topic:${selectedTopic.name}`] : [`topic:${selectedTopic.name}`]
+                }
+                : formData;
+
             if (editingProject) {
-                await updateProject(editingProject.id, formData);
+                await updateProject(editingProject.id, dataWithTopic);
                 toast.success('Project updated successfully');
             } else {
-                await createProject(formData);
+                await createProject(dataWithTopic);
                 toast.success('Project created successfully');
             }
-            handleCloseModal();
+            handleCloseModals();
             refetch();
         } catch (error) {
-            toast.error(
-                editingProject
-                    ? 'Failed to update project'
-                    : 'Failed to create project'
-            );
+            toast.error(editingProject ? 'Failed to update project' : 'Failed to create project');
             console.error('Project operation failed:', error);
         } finally {
             setIsSubmitting(false);
@@ -83,29 +153,45 @@ export default function ProjectsClient() {
     }
 
     return (
-        <main className="p-6">
-            <Header onCreateNew={() => handleOpenModal()} />
-
-            {!projects || projects.length === 0 ? (
-                <ProjectsEmptyState onCreate={() => handleOpenModal()} />
+        <main className="p-6 max-w-7xl mx-auto">
+            <Header onCreateNew={handleOpenTopicModal} />
+            
+            {topics.length === 0 ? (
+                <ProjectsEmptyState onCreate={handleOpenTopicModal} />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.map((project) => (
-                        <ProjectCard
-                            key={project.id}
-                            project={project}
-                            onEdit={handleOpenModal}
-                            onDelete={handleDelete}
+                <div className="space-y-6">
+                    {topics.map((topic) => (
+                        <TopicSection
+                            key={topic.id}
+                            topic={topic}
+                            onToggle={() => {
+                                setTopics(prev => 
+                                    prev.map(t => 
+                                        t.id === topic.id 
+                                            ? { ...t, open: !t.open }
+                                            : t
+                                    )
+                                );
+                            }}
+                            onAddProject={() => handleOpenProjectModal(topic)}
+                            onEditProject={handleOpenProjectModal}
+                            onDeleteProject={handleDelete}
                         />
                     ))}
                 </div>
             )}
 
+            <TopicModal
+                isOpen={showTopicModal}
+                onClose={() => setShowTopicModal(false)}
+                onSubmit={handleTopicSubmit}
+            />
+            
             <ProjectModal
-                isOpen={showModal}
+                isOpen={showProjectModal}
                 project={editingProject}
-                onClose={handleCloseModal}
-                onSubmit={handleSubmit}
+                onClose={handleCloseModals}
+                onSubmit={handleSubmitProject}
                 isSubmitting={isSubmitting}
             />
         </main>
