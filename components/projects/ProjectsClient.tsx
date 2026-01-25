@@ -36,7 +36,7 @@ export default function ProjectsClient() {
         if (projects && projects.length > 0) {
             const defaultTopic: Topic = {
                 id: 'default',
-                name: 'Uncategorized',
+                name: 'Drones',
                 open: true,
                 projects: projects.filter(p => !p.tags?.includes('topic:'))
             };
