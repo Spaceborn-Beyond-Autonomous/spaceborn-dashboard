@@ -8,7 +8,7 @@ interface TopicSectionProps {
     topic: Topic;
     onToggle: () => void;
     onAddProject: (topic: Topic) => void;
-    onEditProject: (topic: Topic | null, project: Project) => void;
+    onEditProject: (project: Project) => void; 
     onDeleteProject: (id: number) => void;
 }
 
