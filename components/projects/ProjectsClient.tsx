@@ -174,7 +174,7 @@ export default function ProjectsClient() {
                                 );
                             }}
                             onAddProject={() => handleOpenProjectModal(topic)}
-                            onEditProject={handleOpenProjectModal}
+                            onEditProject={(project) => handleOpenProjectModal(topic, project)} 
                             onDeleteProject={handleDelete}
                         />
                     ))}
