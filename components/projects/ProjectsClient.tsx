@@ -32,42 +32,129 @@ export default function ProjectsClient() {
     const [topics, setTopics] = useState<Topic[]>([]);
 
     // Organize projects into topics on data load
-    useEffect(() => {
-        if (projects && projects.length > 0) {
-            const defaultTopic: Topic = {
-                id: 'default',
-                name: 'Drones',
-                open: true,
-                projects: projects.filter(p => !p.tags?.includes('topic:'))
-            };
+    // useEffect(() => {
+    //     if (projects && projects.length > 0) {
+    //         const defaultTopic: Topic = {
+    //             id: 'default',
+    //             name: 'Drones',
+    //             open: true,
+    //             projects: projects.filter(p => !p.tags?.includes('topic:'))
+    //         };
 
-            const topicProjects: Topic[] = projects
-                .filter(p => p.tags && p.tags.some(t => t.startsWith('topic:')))
-                .reduce((acc: Topic[], project: Project) => {
-                    const topicTag = project.tags?.find(t => t.startsWith('topic:'));
-                    if (topicTag) {
-                        const topicName = topicTag.replace('topic:', '');
-                        let topic = acc.find(t => t.name === topicName);
+    //         const topicProjects: Topic[] = projects
+    //             .filter(p => p.tags && p.tags.some(t => t.startsWith('topic:')))
+    //             .reduce((acc: Topic[], project: Project) => {
+    //                 const topicTag = project.tags?.find(t => t.startsWith('topic:'));
+    //                 if (topicTag) {
+    //                     const topicName = topicTag.replace('topic:', '');
+    //                     let topic = acc.find(t => t.name === topicName);
                         
-                        if (!topic) {
-                            topic = {
-                                id: `topic-${topicName.toLowerCase().replace(/\s+/g, '-')}`,
-                                name: topicName,
-                                open: false,
-                                projects: []
-                            };
-                            acc.push(topic);
-                        }
-                        topic.projects.push(project);
-                    }
-                    return acc;
-                }, []);
+    //                     if (!topic) {
+    //                         topic = {
+    //                             id: `topic-${topicName.toLowerCase().replace(/\s+/g, '-')}`,
+    //                             name: topicName,
+    //                             open: false,
+    //                             projects: []
+    //                         };
+    //                         acc.push(topic);
+    //                     }
+    //                     topic.projects.push(project);
+    //                 }
+    //                 return acc;
+    //             }, []);
 
-            setTopics([defaultTopic, ...topicProjects]);
-        } else {
-            setTopics([]);
+    //         setTopics([defaultTopic, ...topicProjects]);
+    //     } else {
+    //         setTopics([]);
+    //     }
+    // }, [projects]);
+
+
+    // New Code 
+
+    // Organize projects into topics on data load
+useEffect(() => {
+    if (!projects || projects.length === 0) {
+        setTopics([]);
+        return;
+    }
+
+// 'rtl',
+//         'verification',
+//         'ai',
+//         'vision',
+//         'gcs',
+//         'backend',
+//         'frontend',
+//         'drones'
+
+    
+    const KNOWN_TOPICS = [
+        'chips'        // ← HIGHEST PRIORITY
+    ];
+
+    const topicMap: Record<string, Topic> = {};
+    const used = new Set<number>();
+
+    // Initialize topic buckets
+    KNOWN_TOPICS.forEach(name => {
+        topicMap[name] = {
+            id: `topic-${name}`,
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            open: false,
+            projects: []
+        };
+    });
+
+    const defaultTopic: Topic = {
+        id: 'default',
+        name: 'Drones',
+        open: true,
+        projects: []
+    };
+
+    for (const project of projects) {
+        let assigned: string | null = null;
+
+        const text = `${project.name} ${project.description || ''}`.toLowerCase();
+
+        // 1️⃣ CHIPS OVERRIDE
+        if (text.includes('chips')) {
+            assigned = 'chips';
         }
-    }, [projects]);
+
+        // 2️⃣ Explicit topic tag
+        if (!assigned) {
+            const tag = project.tags?.find(t => t.startsWith('topic:'));
+            if (tag) assigned = tag.replace('topic:', '').toLowerCase();
+        }
+
+        // 3️⃣ Keyword match
+        if (!assigned) {
+            for (const key of KNOWN_TOPICS) {
+                if (text.includes(key)) {
+                    assigned = key;
+                    break;
+                }
+            }
+        }
+
+        if (assigned && topicMap[assigned]) {
+            topicMap[assigned].projects.push(project);
+            used.add(project.id);
+        } else {
+            defaultTopic.projects.push(project);
+        }
+    }
+
+    const finalTopics = [
+        ...Object.values(topicMap).filter(t => t.projects.length > 0),
+        defaultTopic
+    ];
+
+    setTopics(finalTopics);
+}, [projects]);
+
 
     const handleOpenTopicModal = () => {
         setSelectedTopic(null);
