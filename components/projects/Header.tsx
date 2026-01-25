@@ -13,7 +13,7 @@ export function Header({ onCreateNew }: HeaderProps) {
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent tracking-tight">
-                        MISSIONS 
+                        Missions
                     </h1>
                     <p className="text-sm text-zinc-500">Organized by topics and folders</p>
                 </div>
