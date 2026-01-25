@@ -28,15 +28,17 @@ export function ProjectsEmptyState({ onCreate }: ProjectsEmptyStateProps) {
             </div>
 
             {/* CTA Button */}
-            <button
-                onClick={onCreate}
-                className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-0.5"
-            >
-                <div className="bg-indigo-500/50 rounded-md p-0.5 group-hover:bg-indigo-400/50 transition-colors">
-                    <Plus className="h-4 w-4" />
-                </div>
-                Create Your First Project
-            </button>
+            // Just update the button text in the CTA section:
+<button
+    onClick={onCreate}
+    className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-indigo-900/20 hover:shadow-indigo-900/40 hover:-translate-y-0.5"
+>
+    <div className="bg-indigo-500/50 rounded-md p-0.5 group-hover:bg-indigo-400/50 transition-colors">
+        <Plus className="h-4 w-4" />
+    </div>
+    Organize Your First Project
+</button>
+
         </div>
     );
 }
