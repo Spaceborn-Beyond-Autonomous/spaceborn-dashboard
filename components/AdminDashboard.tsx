@@ -114,7 +114,7 @@ const UserModal = ({ showModal, onClose, editingUser, formData, setFormData, han
                                             : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                                     )}
                                 >
-                                    {role}
+                                    {role === 'employee' ? 'Intern' : role}
                                 </button>
                             ))}
                         </div>
@@ -272,7 +272,7 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
 
         return (
             <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border", styles)}>
-                {role}
+                {role === 'employee' ? 'Intern' : role}
             </span>
         );
     };
